@@ -171,16 +171,17 @@
   .perseg button{width:30px;height:30px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-weight:700;font-size:13px}
   .perseg button.on{background:var(--accent);border-color:var(--accent);color:#06243b}
   .pbox{position:relative;border:1px solid #111;border-radius:6px;overflow:hidden;background:#fff}
-  .print-page{position:relative;width:1056px;height:816px;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
+  .print-page{position:relative;width:1000px;height:760px;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
   .print-page:last-child{page-break-after:auto;break-after:auto}
 
   @media print{
-    @page{size:landscape;margin:0}
-    html,body{overflow:visible;background:#fff;height:auto}
+    @page{size:letter landscape;margin:0.25in}
+    html,body{overflow:visible;background:#fff;height:auto;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     #app,.sheet,#backdrop,#setup,.preview-bar{display:none !important}
     #printSheet,#printSheet.preview{display:block !important;position:static !important;inset:auto !important;overflow:visible !important;padding:0 !important;background:#fff !important;transform:none !important}
     .pageholder{display:block !important;width:auto !important;height:auto !important;margin:0 !important;box-shadow:none !important;transform:none !important}
-    .print-page{transform:none !important}
+    .print-page{transform:none !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pbox,.pbox *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
 </style>
 </head>
@@ -188,7 +189,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v38</div>
+  <div id="setupVer">Red Planning Tool v41</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -237,7 +238,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v38</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v41</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -356,6 +357,7 @@
     <div class="field"><label>ACTION range per presentation (NM)</label>
       <div id="masterActions"></div></div>
     <button class="btn danger" id="masterClear" style="width:100%;margin-top:4px">Clear mission — wipe everything &amp; reset to defaults</button>
+    <button class="btn" id="masterMissionsBtn" style="width:100%;margin-top:14px">🗂 Missions — save / load</button>
   </div>
 </div>
 
@@ -566,7 +568,9 @@ function buildRedPt(o){const MS=modeScale(),s=(o.size||34)*MS;const wrap=documen
   t.textContent='AXIS '+((ax==null||isNaN(ax))?'—':((''+Math.round(((ax%360)+360)%360)).padStart(3,'0')+'°'));asvg.appendChild(t);wrap.appendChild(asvg);
   const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',s);svg.setAttribute('height',s);svg.setAttribute('viewBox','0 0 '+s+' '+s);
   svg.style.position='absolute';svg.style.left=(-s/2)+'px';svg.style.top=(-s/2)+'px';
-  const h=s/2,dia=document.createElementNS(NS,'polygon');dia.setAttribute('points',h+',2 '+(s-2)+','+h+' '+h+','+(s-2)+' 2,'+h);dia.setAttribute('fill',RED);dia.setAttribute('stroke','#7a1c18');dia.setAttribute('stroke-width','1.5');svg.appendChild(dia);wrap.appendChild(svg);return wrap;}
+  const h=s/2,dia=document.createElementNS(NS,'polygon');dia.setAttribute('points',h+',2 '+(s-2)+','+h+' '+h+','+(s-2)+' 2,'+h);dia.setAttribute('fill',RED);dia.setAttribute('stroke','#7a1c18');dia.setAttribute('stroke-width','1.5');svg.appendChild(dia);wrap.appendChild(svg);
+  if(!staticMode){const HIT=Math.max(s*1.8,44,30/(state.zoom||1));const hit=document.createElement('div');hit.style.cssText='position:absolute;left:'+(-HIT/2)+'px;top:'+(-HIT/2)+'px;width:'+HIT+'px;height:'+HIT+'px;border-radius:50%';wrap.appendChild(hit);}
+  return wrap;}
 
 /* ============ SHOW MODE (stepped frames) ============ */
 let staticMode=false;
@@ -784,9 +788,26 @@ function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAl
   function refresh(){for(let n=0;n<=50;n++)if(rowEls[n])rowEls[n].classList.toggle('picked',curLow!==null&&n>=curLow&&n<=curHigh);}
   if(pick){const c=(opts.current||'').trim();if(c){if(c.includes('-')){const p=c.split('-');const a=p[0]==='SFC'?0:parseInt(p[0]),b=p[1]==='SFC'?0:parseInt(p[1]);if(!isNaN(a)&&!isNaN(b)){curLow=Math.min(a,b);curHigh=Math.max(a,b);anchor=curLow;hasBlock=true;}}else{const v=c==='SFC'?0:parseInt(c);if(!isNaN(v)){curLow=curHigh=v;anchor=v;hasBlock=false;}}}refresh();}}
 function openAltEditor(){$('altTitle').textContent='Red air altitude blocks';$('altHelp').textContent='Tap a level to flag it Red air. Blue = Blue air. Macros fill quick blocks.';buildAltTape($('altBody'),{onChange:render});openSheet('altSheet');}
+function blueAltConfirm(onFix,onProceed){
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:26px';
+  const card=document.createElement('div');
+  card.style.cssText='background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:360px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.55)';
+  card.innerHTML='<div style="font-size:17px;font-weight:800;color:var(--txt);margin-bottom:8px">Blue block selected</div>'+
+    '<div style="font-size:14px;color:var(--muted);line-height:1.45;margin-bottom:18px">That altitude isn\u2019t flagged as Red air. Are you sure you meant to select a <b style="color:#ff8a8a">Blue block</b>?</div>';
+  const fix=document.createElement('button');fix.className='btn';fix.style.cssText='width:100%;margin-bottom:8px';fix.textContent='Oops, let me fix that';
+  const go=document.createElement('button');go.className='btn primary';go.style.cssText='width:100%';go.textContent='Shut it, I know what I\u2019m doing';
+  const close=()=>ov.remove();
+  fix.onclick=()=>{close();if(onFix)onFix();};
+  go.onclick=()=>{close();if(onProceed)onProceed();};
+  card.append(fix,go);ov.appendChild(card);document.body.appendChild(ov);
+}
 function openAltPicker(o){$('altTitle').textContent='Pick altitude';$('altHelp').textContent='Tap a level, then optionally a second level to make a block. ✕ saves.';
+  const prevAlt=o.alt||'';
   buildAltTape($('altBody'),{excludeId:o.id,current:o.alt,pick:(altStr)=>{o.alt=altStr||'';o.showAlt=true;render();}});
-  openSheet('altSheet');sheetCloseHook=()=>{closeSheets();openInspector();};}
+  openSheet('altSheet');sheetCloseHook=()=>{closeSheets();
+    if(o.alt&&o.alt!==prevAlt&&isBlueAlt(o.alt))blueAltConfirm(()=>openAltPicker(o),()=>openInspector());
+    else openInspector();};}
 
 /* ============ INSPECTOR ============ */
 function openInspector(){const o=getSel();if(!o)return;buildInspector(o);openSheet('inspSheet');}
@@ -840,7 +861,8 @@ function buildInspector(o){
     else if(o.alt)el.innerHTML='<span style="color:var(--ok)">Red air block ✓</span>';else el.innerHTML='';}
 
   body.querySelectorAll('[data-k]').forEach(inp=>{inp.value=o[inp.dataset.k];
-    inp.addEventListener('input',()=>{o[inp.dataset.k]=inp.dataset.num!==undefined?(parseFloat(inp.value)||0):inp.value;if(inp.dataset.k==='alt')altNoteRefresh();render();});});
+    inp.addEventListener('input',()=>{o[inp.dataset.k]=inp.dataset.num!==undefined?(parseFloat(inp.value)||0):inp.value;if(inp.dataset.k==='alt')altNoteRefresh();render();});
+    if(inp.dataset.k==='alt')inp.addEventListener('change',()=>{if(o.alt&&isBlueAlt(o.alt))blueAltConfirm(()=>openAltPicker(o),null);});});
   body.querySelectorAll('[data-toggle]').forEach(sw=>{const k=sw.dataset.toggle;sw.classList.toggle('on',!!o[k]);sw.addEventListener('click',()=>{o[k]=!o[k];sw.classList.toggle('on',o[k]);render();});});
   const it=body.querySelector('#iTurn');if(it)[...it.children].forEach(b=>{b.classList.toggle('sel',(state.turnDir||-1)===+b.dataset.d);b.onclick=()=>{state.turnDir=+b.dataset.d;[...it.children].forEach(x=>x.classList.toggle('sel',x===b));};});
   const im=body.querySelector('#iMan');if(im)[...im.children].forEach(b=>b.onclick=()=>{if((o.man||[]).length>=6)return;o.man=o.man||[];o.man.push({kind:b.dataset.m,dir:state.turnDir||-1});
@@ -869,7 +891,7 @@ function renderPresBar(){const bar=$('presBar');bar.innerHTML='';
   const add=document.createElement('button');add.className='pres-add';add.textContent='＋';add.onclick=addCard;bar.appendChild(add);}
 function loadCard(i){state.cur=i;const cd=state.cards[i];state.title=cd.title;state.objects=cd.objects;state.selected=null;
   $('titleText').textContent=cd.title||cd.name;render();updateActions();renderPresBar();closeSheets();}
-function addCard(){const name=LETTERS[state.cards.length]||('Pic '+(state.cards.length+1));state.cards.push({name,title:'',objects:[]});loadCard(state.cards.length-1);}
+function addCard(){const name=LETTERS[state.cards.length]||('Pic '+(state.cards.length+1));state.cards.push({name,title:'',objects:[]});loadCard(state.cards.length-1);ensureScaleDefaults();render();persist();}
 function renderMenuPres(){const c=$('menuPres');c.innerHTML='';
   state.cards.forEach((cd,i)=>{const row=document.createElement('div');row.className='fedit';
     const tag=document.createElement('div');tag.className='sw';tag.style.background=i===state.cur?cssv('--accent'):cssv('--line');tag.style.borderRadius='8px';
@@ -898,8 +920,10 @@ function renderMasterActions(){const c=$('masterActions');if(!c)return;c.innerHT
 function openMaster(){[...$('masterLayout').children].forEach(b=>b.classList.toggle('sel',+b.dataset.m===lmode()));
   [...$('masterScale').children].forEach(b=>b.classList.toggle('sel',+b.dataset.s===(state.scaleNM||25)));
   [...$('masterDir').children].forEach(b=>b.classList.toggle('sel',+b.dataset.ang===state.defaultAngle));
-  $('masterAxis').value=(state.fightAxis==null?'':state.fightAxis);renderMasterFEdit();renderMasterActions();openSheet('masterSheet');}
+  $('masterAxis').value=(state.fightAxis==null?'':state.fightAxis);renderMasterFEdit();renderMasterActions();openSheet('masterSheet');
+  const mb=$('masterSheet').querySelector('.body');if(mb){mb.scrollTop=0;requestAnimationFrame(()=>{mb.scrollTop=0;});}}
 $('masterBtn').onclick=openMaster;$('menuMasterBtn').onclick=openMaster;
+$('masterMissionsBtn').onclick=()=>{closeSheets();openMissions();};
 [...$('masterLayout').children].forEach(b=>b.onclick=()=>{state.layoutMode=+b.dataset.m;[...$('masterLayout').children].forEach(x=>x.classList.toggle('sel',x===b));render();fitZoom();persist();});
 [...$('masterScale').children].forEach(b=>b.onclick=()=>{state.scaleNM=+b.dataset.s;[...$('masterScale').children].forEach(x=>x.classList.toggle('sel',x===b));ensureScaleDefaults();render();persist();});
 [...$('masterDir').children].forEach(b=>b.onclick=()=>{state.defaultAngle=+b.dataset.ang;[...$('masterDir').children].forEach(x=>x.classList.toggle('sel',x===b));render();});
@@ -1060,7 +1084,7 @@ function buildCell(page,card,x,y,w,h){
   const lg=legendEl(card.objects,9);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=legTop+'px';lg.style.width=w+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';page.appendChild(lg);
 }
 function buildPageFor(group){
-  const SW=1056,SH=816,HALF=SW/2;
+  const SW=1000,SH=760,HALF=SW/2;
   const page=document.createElement('div');page.className='print-page';page.style.width=SW+'px';page.style.height=SH+'px';
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';page.appendChild(fold);
   const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+SH+'px;padding:52px';
@@ -1078,10 +1102,10 @@ function buildPageFor(group){
 }
 function buildPages(scaled){
   const sheet=$('printSheet');sheet.innerHTML='';
-  const pv=scaled?Math.min(1,(window.innerWidth-24)/1056):1;
+  const pv=scaled?Math.min(1,(window.innerWidth-24)/1000):1;
   const m=lmode(),per=m===1?6:2;
   for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);const page=buildPageFor(group);
-    if(scaled){const h=document.createElement('div');h.className='pageholder';h.style.width=(1056*pv)+'px';h.style.height=(816*pv)+'px';page.style.transform='scale('+pv+')';page.style.transformOrigin='top left';h.appendChild(page);sheet.appendChild(h);}
+    if(scaled){const h=document.createElement('div');h.className='pageholder';h.style.width=(1000*pv)+'px';h.style.height=(760*pv)+'px';page.style.transform='scale('+pv+')';page.style.transformOrigin='top left';h.appendChild(page);sheet.appendChild(h);}
     else sheet.appendChild(page);}
 }
 let _prevBar=null;
