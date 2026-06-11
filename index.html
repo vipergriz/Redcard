@@ -45,6 +45,11 @@
   #scene.show{background:transparent;border:none;box-shadow:none}
   .phase-label{position:absolute;text-align:center;font-weight:800;font-size:34px;color:#0e1117;letter-spacing:.5px}
   .phase-box{position:absolute;background:#fff;border:3px solid #15181d;border-radius:16px;overflow:hidden;box-shadow:0 8px 34px rgba(0,0,0,.4)}
+  #showHud{position:absolute;left:12px;top:10px;z-index:60;pointer-events:none;display:none;max-width:66%}
+  #showHud .hud-sel{font-weight:800;font-size:16px;color:#fff;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+  #showHud .hud-sub{font-size:12px;color:#d4dbe4;margin-top:1px;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+  #showHud .hud-warns{margin-top:9px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+  #showHud .hud-warn{font-size:12.5px;font-weight:600;color:#ffce73;background:rgba(18,21,26,.66);border:1px solid rgba(255,206,115,.4);border-radius:7px;padding:3px 9px}
   .fsel{position:absolute;width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;background:#fff;border:3px solid #15181d;color:#15181d;box-shadow:0 3px 12px rgba(0,0,0,.35);z-index:5}
   .fsel.on{background:#ffd400;border-color:#15181d}
   #toast{position:fixed;left:50%;bottom:calc(var(--sab) + 92px);transform:translateX(-50%) translateY(8px);background:#15181d;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:400;border:1px solid var(--line)}
@@ -189,7 +194,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v41</div>
+  <div id="setupVer">Red Planning Tool v43</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -238,11 +243,11 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v41</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v43</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
-  <div id="canvasWrap"><div id="canvas"><div id="scene"></div></div></div>
+  <div id="canvasWrap"><div id="canvas"><div id="scene"></div></div><div id="showHud"></div></div>
   <div id="bottombar">
     <div id="actionSlot" style="display:flex;gap:8px;flex:1"></div>
     <div class="zoomgrp"><button id="zOut">−</button><button class="zv" id="zVal">100%</button><button id="zIn">＋</button></div>
@@ -443,6 +448,7 @@ scene.style.width=W+'px';scene.style.height=H+'px';
 function render(){
   if(state.showMode)return renderShow();
   applyPageSize();
+  {const hud=$('showHud');if(hud)hud.style.display='none';}
   scene.innerHTML="";
   if(state.objects.length===0){const h=document.createElement('div');h.className='empty-hint';
     h.innerHTML="Tap <b>＋</b> below to drop an arrow.<br>Tap a jet to add maneuvers. Drag to position.";scene.appendChild(h);}
@@ -461,7 +467,7 @@ function buildEl(o){
 function lmode(){return state.layoutMode||1;}
 function pageSize(){return lmode()===2?3150:1680;}
 function applyPageSize(){W=H=pageSize();if(scene){scene.style.width=W+'px';scene.style.height=H+'px';}}
-function arrowGeo(){return lmode()===2?{th:102,len:330,fs:47,lbl:true}:{th:68,len:166,fs:28,lbl:false};}
+function arrowGeo(){return lmode()===2?{th:179,len:894,fs:114,lbl:true}:{th:68,len:166,fs:28,lbl:false};}
 function modeScale(){return lmode()===2?1.5:1;}
 function ppnm(){return W/(state.scaleNM||25);}
 function defaultScaleNM(){return (state.scaleNM===40)?20:10;}
@@ -483,6 +489,7 @@ function buildArrow(o){
   {let txt=(o.cs||'').toUpperCase();let blue=false;
    if(o.showAlt&&o.alt){txt+=(txt?'/':'')+fmtAlt(o.alt);blue=isBlueAlt(o.alt);}
    if(txt&&(!staticMode||!printMode||geo.lbl)){const l=document.createElement('div');l.className='lbl';l.innerHTML=esc(txt)+(blue?'<span style="color:#d11">*</span>':'');l.style.color=tcol;l.style.fontSize=geo.fs+'px';
+     if(geo.lbl){const ah=Math.min(th*0.95,len*0.42),off=ah/2,a=o.angle*Math.PI/180;l.style.left=(-Math.cos(a)*off).toFixed(1)+'px';l.style.top=(-Math.sin(a)*off).toFixed(1)+'px';}
      const aa=((o.angle%360)+360)%360,vert=(aa>45&&aa<135)||(aa>225&&aa<315);if(vert)l.style.transform='translate(-50%,-50%) rotate(-90deg)';
      wrap.appendChild(l);}}
   if(o.ea){const MS=modeScale(),a=o.angle*Math.PI/180,d=len/2+16*MS,eb=Math.round(34*MS);const b=document.createElementNS(NS,'svg');b.setAttribute('class','ea-bolt');b.setAttribute('width',eb);b.setAttribute('height',eb);b.setAttribute('viewBox','0 0 18 18');b.style.left=(Math.cos(a)*d)+'px';b.style.top=(Math.sin(a)*d)+'px';const p=document.createElementNS(NS,'path');p.setAttribute('d',BOLT);p.setAttribute('fill','#FFD400');p.setAttribute('stroke','#9a6b00');p.setAttribute('stroke-width','.8');b.appendChild(p);wrap.appendChild(b);}
@@ -680,9 +687,19 @@ function renderShow(){scene.innerHTML="";const labelH=64,gap=90,side=W;
     bdg.addEventListener('pointerdown',e=>e.stopPropagation());
     bdg.addEventListener('click',e=>{e.stopPropagation();toggleCardFrame(fr);});
     scene.appendChild(bdg);});
-  staticMode=false;}
+  staticMode=false;renderShowHud();}
+function renderShowHud(){const hud=$('showHud');if(!hud)return;
+  const n=lmode(),roman=['','I','II','III'][n]||'I',card=curCard(),objs=(card&&card.objects)||state.objects||[];
+  const warns=[];
+  if(objs.some(o=>o.type==='arrow'&&o.alt&&isBlueAlt(o.alt)))warns.push('Blue block altitude assigned');
+  if(!objs.some(o=>o.type==='redpt'))warns.push('No Red Point placed');
+  if(state.fightAxis==null)warns.push('No fight axis chosen');
+  if(!(card&&card.actionRange))warns.push('No ACTION range set');
+  let h='<div class="hud-sel">SELECT '+n+'</div><div class="hud-sub">Layout '+roman+' \u00b7 tap '+n+' tile'+(n>1?'s':'')+' to include</div>';
+  if(warns.length)h+='<div class="hud-warns">'+warns.map(w=>'<div class="hud-warn">\u26a0 '+esc(w)+'</div>').join('')+'</div>';
+  hud.innerHTML=h;hud.style.display='block';}
 function enterShow(){state.showMode=true;state.selected=null;scene.classList.add('show');renderShow();updateActions();fitZoom();closeSheets();}
-function exitShow(){state.showMode=false;scene.classList.remove('show');scene.style.width=W+'px';scene.style.height=H+'px';render();updateActions();fitZoom();}
+function exitShow(){state.showMode=false;scene.classList.remove('show');scene.style.width=W+'px';scene.style.height=H+'px';const hud=$('showHud');if(hud)hud.style.display='none';render();updateActions();fitZoom();}
 
 /* ============ DRAG (window-based) ============ */
 function startDrag(o,e){
@@ -788,6 +805,19 @@ function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAl
   function refresh(){for(let n=0;n<=50;n++)if(rowEls[n])rowEls[n].classList.toggle('picked',curLow!==null&&n>=curLow&&n<=curHigh);}
   if(pick){const c=(opts.current||'').trim();if(c){if(c.includes('-')){const p=c.split('-');const a=p[0]==='SFC'?0:parseInt(p[0]),b=p[1]==='SFC'?0:parseInt(p[1]);if(!isNaN(a)&&!isNaN(b)){curLow=Math.min(a,b);curHigh=Math.max(a,b);anchor=curLow;hasBlock=true;}}else{const v=c==='SFC'?0:parseInt(c);if(!isNaN(v)){curLow=curHigh=v;anchor=v;hasBlock=false;}}}refresh();}}
 function openAltEditor(){$('altTitle').textContent='Red air altitude blocks';$('altHelp').textContent='Tap a level to flag it Red air. Blue = Blue air. Macros fill quick blocks.';buildAltTape($('altBody'),{onChange:render});openSheet('altSheet');}
+function askActionRange(card){
+  const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:26px';
+  const cardEl=document.createElement('div');cardEl.style.cssText='background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:340px;width:100%;padding:22px';
+  cardEl.innerHTML='<div style="font-size:17px;font-weight:800;color:var(--txt);margin-bottom:6px">ACTION range</div><div style="font-size:14px;color:var(--muted);margin-bottom:14px">Range (NM) at which this presentation goes ACTION.</div>';
+  const inp=document.createElement('input');inp.type='number';inp.inputMode='numeric';inp.placeholder='e.g. 50';inp.style.cssText='width:100%;padding:12px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:16px;margin-bottom:14px;box-sizing:border-box';
+  const row=document.createElement('div');row.style.cssText='display:flex;gap:8px';
+  const skip=document.createElement('button');skip.className='btn';skip.style.flex='1';skip.textContent='Skip';
+  const ok=document.createElement('button');ok.className='btn primary';ok.style.flex='1';ok.textContent='Set';
+  const close=()=>ov.remove();
+  skip.onclick=close;
+  ok.onclick=()=>{const v=inp.value.trim();if(v){card.actionRange=v;const mar=$('menuActionRange');if(mar&&card===curCard())mar.value=v;render();persist();}close();};
+  row.append(skip,ok);cardEl.append(inp,row);ov.appendChild(cardEl);document.body.appendChild(ov);setTimeout(()=>{try{inp.focus();}catch(_){}},60);
+}
 function blueAltConfirm(onFix,onProceed){
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:26px';
@@ -867,7 +897,7 @@ function buildInspector(o){
   const it=body.querySelector('#iTurn');if(it)[...it.children].forEach(b=>{b.classList.toggle('sel',(state.turnDir||-1)===+b.dataset.d);b.onclick=()=>{state.turnDir=+b.dataset.d;[...it.children].forEach(x=>x.classList.toggle('sel',x===b));};});
   const im=body.querySelector('#iMan');if(im)[...im.children].forEach(b=>b.onclick=()=>{if((o.man||[]).length>=6)return;o.man=o.man||[];o.man.push({kind:b.dataset.m,dir:state.turnDir||-1});
     const card=curCard(),total=state.objects.reduce((n,x)=>n+((x.type==='arrow'&&x.man)?x.man.length:0),0);
-    if(total===1&&card&&!card.actionRange){const r=prompt('ACTION range for this presentation? (NM)','50');if(r&&String(r).trim())card.actionRange=String(r).trim();}
+    if(total===1&&card&&!card.actionRange)askActionRange(card);
     buildInspector(o);render();});
   const mu=body.querySelector('#manUndo');if(mu)mu.onclick=()=>{(o.man||[]).pop();buildInspector(o);render();};
   const mc=body.querySelector('#manClear');if(mc)mc.onclick=()=>{o.man=[];buildInspector(o);render();};
@@ -935,7 +965,7 @@ function clearMission(){if(!confirm('Wipe this entire mission and start fresh? T
   state.formations=[{color:PALETTE[0],name:'MG',ships:4}];state.redAlts=[];
   state.cards=[{name:'Alpha',title:'',objects:[]}];state.cur=0;state.title='';state.selected=null;
   state.objects=state.cards[0].objects;ensureScaleDefaults();
-  loadCard(0);fitZoom();persist();flash('Mission cleared');}
+  loadCard(0);fitZoom();persist();flash('Mission cleared');openMaster();}
 $('masterClear').onclick=clearMission;
 function fEditRow(f,i){const row=document.createElement('div');row.className='fedit';
   const sw=document.createElement('div');sw.className='sw';sw.style.background=f.color;
@@ -1120,7 +1150,7 @@ function doNativePrint(){buildPages(false);$('printSheet').classList.remove('pre
   setTimeout(()=>{try{window.print();}catch(_){}openPreview();},60);}
 $('printBtn').onclick=openPreview;
 $('clearBtn').onclick=()=>{if(confirm('Remove every item from this presentation?')){state.objects.length=0;state.selected=null;render();updateActions();closeSheets();}};
-$('redoSetup').onclick=()=>{closeSheets();wiz.dir=state.defaultAngle;wiz.axis=state.fightAxis;wiz.forms=state.formations.map(f=>({name:f.name,ships:f.ships||1}));$('setup').classList.remove('hidden');showStep(1);buildDirGrid();buildWizForms();};
+$('redoSetup').onclick=()=>{closeSheets();openMaster();};
 
 document.addEventListener('keydown',e=>{const t=e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;const o=getSel();
   if((e.key==='Delete'||e.key==='Backspace')&&o){e.preventDefault();deleteSel();}
@@ -1155,7 +1185,7 @@ function finishSetup(skip){let forms=skip?wiz.forms:wiz.forms.filter(f=>(f.name|
 
 /* ============ INIT ============ */
 let _restored=false;try{_restored=tryRestore();}catch(_){}
-if(!_restored){buildDirGrid();buildWizForms();$('titleText').textContent=state.title;updateActions();renderPresBar();render();fitZoom();}
+if(!_restored){$('setup').classList.add('hidden');ensureScaleDefaults();$('titleText').textContent=state.title;updateActions();renderPresBar();render();fitZoom();openMaster();}
 window.addEventListener('orientationchange',()=>setTimeout(fitZoom,300));
 </script>
 </body>
