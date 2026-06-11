@@ -194,7 +194,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v43</div>
+  <div id="setupVer">Red Planning Tool v45</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -243,7 +243,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v43</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v45</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -488,7 +488,7 @@ function buildArrow(o){
   const poly=document.createElementNS(NS,'polygon');poly.setAttribute('points',arrowPolygon(len,th));poly.setAttribute('fill',col);poly.setAttribute('stroke','rgba(0,0,0,.18)');poly.setAttribute('stroke-width','1');svg.appendChild(poly);wrap.appendChild(svg);
   {let txt=(o.cs||'').toUpperCase();let blue=false;
    if(o.showAlt&&o.alt){txt+=(txt?'/':'')+fmtAlt(o.alt);blue=isBlueAlt(o.alt);}
-   if(txt&&(!staticMode||!printMode||geo.lbl)){const l=document.createElement('div');l.className='lbl';l.innerHTML=esc(txt)+(blue?'<span style="color:#d11">*</span>':'');l.style.color=tcol;l.style.fontSize=geo.fs+'px';
+   if(txt&&!staticMode){const l=document.createElement('div');l.className='lbl';l.innerHTML=esc(txt)+(blue?'<span style="color:#d11">*</span>':'');l.style.color=tcol;l.style.fontSize=geo.fs+'px';
      if(geo.lbl){const ah=Math.min(th*0.95,len*0.42),off=ah/2,a=o.angle*Math.PI/180;l.style.left=(-Math.cos(a)*off).toFixed(1)+'px';l.style.top=(-Math.sin(a)*off).toFixed(1)+'px';}
      const aa=((o.angle%360)+360)%360,vert=(aa>45&&aa<135)||(aa>225&&aa<315);if(vert)l.style.transform='translate(-50%,-50%) rotate(-90deg)';
      wrap.appendChild(l);}}
@@ -526,7 +526,7 @@ function buildGhost(jet,end,head){
   const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',len);svg.setAttribute('height',th);svg.setAttribute('viewBox',`0 0 ${len} ${th}`);
   svg.style.position='absolute';svg.style.left=(-len/2)+'px';svg.style.top=(-th/2)+'px';svg.style.transform=`rotate(${head}deg)`;svg.style.transformOrigin='center';
   const poly=document.createElementNS(NS,'polygon');poly.setAttribute('points',arrowPolygon(len,th));poly.setAttribute('fill',col);poly.setAttribute('fill-opacity','0.35');poly.setAttribute('stroke',col);poly.setAttribute('stroke-width','1.5');svg.appendChild(poly);wrap.appendChild(svg);
-  if(jet.cs&&(!staticMode||!printMode||geo.lbl)){const l=document.createElement('div');l.className='lbl';l.textContent=jet.cs.toUpperCase();l.style.color=textColorFor(col);l.style.fontSize=geo.fs+'px';wrap.appendChild(l);}
+  if(jet.cs&&!staticMode){const l=document.createElement('div');l.className='lbl';l.textContent=jet.cs.toUpperCase();l.style.color=textColorFor(col);l.style.fontSize=geo.fs+'px';wrap.appendChild(l);}
   if(!staticMode)onTap(wrap,()=>{selectOnly(jet.id);openInspector();});
   return wrap;
 }
@@ -969,7 +969,7 @@ function clearMission(){if(!confirm('Wipe this entire mission and start fresh? T
 $('masterClear').onclick=clearMission;
 function fEditRow(f,i){const row=document.createElement('div');row.className='fedit';
   const sw=document.createElement('div');sw.className='sw';sw.style.background=f.color;
-  const nm=document.createElement('input');nm.className='nm';nm.placeholder='CS';nm.maxLength=6;nm.value=f.name||'';nm.addEventListener('input',()=>{f.name=nm.value.toUpperCase();render();});
+  const nm=document.createElement('input');nm.className='nm';nm.placeholder='CS';nm.maxLength=10;nm.value=f.name||'';nm.addEventListener('input',()=>{f.name=nm.value.toUpperCase();render();});
   const ships=document.createElement('div');ships.className='ships';
   for(let n=1;n<=4;n++){const b=document.createElement('button');b.textContent=n;if((f.ships||1)===n)b.classList.add('sel');b.onclick=()=>{f.ships=n;[...ships.children].forEach(x=>x.classList.toggle('sel',x===b));render();};ships.appendChild(b);}
   const rm=document.createElement('button');rm.className='rm';rm.textContent='✕';rm.onclick=()=>{if(state.formations.length<=1)return;state.formations.splice(i,1);state.formations.forEach((g,k)=>g.color=PALETTE[k]);if(state.active>=state.formations.length)state.active=0;render();refreshFEdits();};
@@ -1090,7 +1090,7 @@ function phaseBoxEl(card,spec,boxW,boxH){
 function bandSpecs(card){const cap=lmode();const sel=(card.frames&&card.frames.length)?card.frames.slice(0,cap):null;
   if(sel&&sel.length)return sel;return [{type:'push'},{type:'step',k:999},{type:'origin'}].slice(0,cap);}
 function buildBand(page,card,x,y,w,h){
-  const cap=lmode(),showLeg=cap!==2,gap=8,K=maxChainOf(card.objects);
+  const cap=lmode(),showLeg=true,gap=8,K=maxChainOf(card.objects);
   const specs=bandSpecs(card),N=Math.max(1,specs.length);
   const sep=document.createElement('div');sep.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:0;border-top:2px solid #111';page.appendChild(sep);
   const hdr=document.createElement('div');hdr.style.cssText='position:absolute;left:'+x+'px;top:'+(y+4)+'px;width:'+w+'px;font-size:12px;font-weight:800;color:#111';
@@ -1173,7 +1173,7 @@ $('startPlan').onclick=()=>finishSetup(false);
 function buildWizForms(){const c=$('fEditList');c.innerHTML='';
   wiz.forms.forEach((f,i)=>{const row=document.createElement('div');row.className='fedit';
     const sw=document.createElement('div');sw.className='sw';sw.style.background=PALETTE[i];
-    const nm=document.createElement('input');nm.className='nm';nm.placeholder='e.g. BY';nm.maxLength=6;nm.value=f.name||'';nm.addEventListener('input',()=>{f.name=nm.value.toUpperCase();});
+    const nm=document.createElement('input');nm.className='nm';nm.placeholder='e.g. BY';nm.maxLength=10;nm.value=f.name||'';nm.addEventListener('input',()=>{f.name=nm.value.toUpperCase();});
     const ships=document.createElement('div');ships.className='ships';
     for(let n=1;n<=4;n++){const b=document.createElement('button');b.textContent=n;if((f.ships||1)===n)b.classList.add('sel');b.onclick=()=>{f.ships=n;[...ships.children].forEach(x=>x.classList.toggle('sel',x===b));};ships.appendChild(b);}
     const rm=document.createElement('button');rm.className='rm';rm.textContent='✕';rm.onclick=()=>{if(wiz.forms.length<=1)return;wiz.forms.splice(i,1);buildWizForms();};
