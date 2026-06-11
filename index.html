@@ -188,7 +188,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v37</div>
+  <div id="setupVer">Red Planning Tool v38</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -237,7 +237,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v37</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v38</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -1025,12 +1025,11 @@ $('fileInput').addEventListener('change',e=>{const file=e.target.files[0];if(!fi
 /* ===== Fold-card print: landscape Letter, show-versions stacked on the right half ===== */
 function phaseBoxEl(card,spec,boxW,boxH){
   const prev=state.objects;state.objects=card.objects;staticMode=true;const pp=printMode;printMode=true;
-  const bb=contentBBox();const bw=Math.max(1,bb.mxX-bb.mnX),bh=Math.max(1,bb.mxY-bb.mnY);
-  const sc=Math.min(boxW/bw,boxH/bh)*0.88;
+  const sq=W;const sc=Math.min(boxW,boxH)/sq;
   const box=document.createElement('div');box.className='pbox';box.style.width=boxW+'px';box.style.height=boxH+'px';
   const inner=document.createElement('div');inner.style.position='absolute';inner.style.transformOrigin='top left';
-  inner.style.left=((boxW-bw*sc)/2)+'px';inner.style.top=((boxH-bh*sc)/2)+'px';inner.style.transform='scale('+sc+')';
-  const sub=document.createElement('div');sub.style.position='absolute';sub.style.left=(-bb.mnX)+'px';sub.style.top=(-bb.mnY)+'px';
+  inner.style.left=((boxW-sq*sc)/2)+'px';inner.style.top=((boxH-sq*sc)/2)+'px';inner.style.transform='scale('+sc+')';
+  const sub=document.createElement('div');sub.style.position='absolute';sub.style.left='0px';sub.style.top='0px';
   inner.appendChild(sub);drawFrame(sub,spec);box.appendChild(inner);
   staticMode=false;printMode=pp;state.objects=prev;return box;
 }
@@ -1046,18 +1045,19 @@ function buildBand(page,card,x,y,w,h){
   const legW=showLeg?Math.min(150,Math.round(w*0.26)):0;
   const tilesW=w-legW-(legW?gap:0);
   const boxW=Math.floor((tilesW-(N-1)*gap)/N),boxTop=y+headH+labelH,boxH=h-headH-labelH;
+  const side=Math.min(boxW,boxH);
   specs.forEach((sp,i)=>{const bx0=x+i*(boxW+gap);
     const lb=document.createElement('div');lb.style.cssText='position:absolute;left:'+bx0+'px;top:'+(y+headH)+'px;width:'+boxW+'px;font-size:9px;font-weight:700;text-align:center;color:#555';lb.textContent=frameLabel(sp,K,card);page.appendChild(lb);
-    const bx=phaseBoxEl(card,sp,boxW,boxH);bx.style.position='absolute';bx.style.left=bx0+'px';bx.style.top=boxTop+'px';page.appendChild(bx);});
+    const bx=phaseBoxEl(card,sp,side,side);bx.style.position='absolute';bx.style.left=(bx0+(boxW-side)/2)+'px';bx.style.top=(boxTop+(boxH-side)/2)+'px';page.appendChild(bx);});
   if(showLeg){const lx=x+tilesW+gap;const lg=legendEl(card.objects,11);lg.style.position='absolute';lg.style.left=lx+'px';lg.style.top=boxTop+'px';lg.style.width=legW+'px';lg.style.height=boxH+'px';lg.style.overflow='hidden';page.appendChild(lg);}
 }
 function buildCell(page,card,x,y,w,h){
-  const headH=15,gap=5,legH=Math.min(Math.round(h*0.36),108);
+  const headH=15,gap=5;
   const sp=(card.frames&&card.frames[0])?card.frames[0]:{type:'step',k:999};
   const hdr=document.createElement('div');hdr.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;font-size:11px;font-weight:800;color:#111;border-top:2px solid #111;padding-top:2px;text-align:center';hdr.textContent=(card.name||'').toUpperCase();page.appendChild(hdr);
-  const boxTop=y+headH,boxH=h-headH-legH-gap;
-  const bx=phaseBoxEl(card,sp,w,boxH);bx.style.position='absolute';bx.style.left=x+'px';bx.style.top=boxTop+'px';page.appendChild(bx);
-  const lg=legendEl(card.objects,9);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=(boxTop+boxH+gap)+'px';lg.style.width=w+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';page.appendChild(lg);
+  const side=Math.min(w,h-headH-gap-54),boxTop=y+headH,legTop=boxTop+side+gap,legH=h-headH-side-gap;
+  const bx=phaseBoxEl(card,sp,side,side);bx.style.position='absolute';bx.style.left=(x+(w-side)/2)+'px';bx.style.top=boxTop+'px';page.appendChild(bx);
+  const lg=legendEl(card.objects,9);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=legTop+'px';lg.style.width=w+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';page.appendChild(lg);
 }
 function buildPageFor(group){
   const SW=1056,SH=816,HALF=SW/2;
