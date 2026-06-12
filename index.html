@@ -50,6 +50,9 @@
   #showHud .hud-sub{font-size:12px;color:#d4dbe4;margin-top:1px;text-shadow:0 1px 4px rgba(0,0,0,.7)}
   #showHud .hud-warns{margin-top:9px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
   #showHud .hud-warn{font-size:12.5px;font-weight:600;color:#ffce73;background:rgba(18,21,26,.66);border:1px solid rgba(255,206,115,.4);border-radius:7px;padding:3px 9px}
+  #showHud .hud-tog{margin-top:10px;display:flex;gap:7px;flex-wrap:wrap;pointer-events:auto}
+  #showHud .hud-btn{pointer-events:auto;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:rgba(18,21,26,.72);color:#cdd5df}
+  #showHud .hud-btn.on{background:var(--accent);border-color:var(--accent);color:#06243b}
   .fsel{position:absolute;width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;background:#fff;border:3px solid #15181d;color:#15181d;box-shadow:0 3px 12px rgba(0,0,0,.35);z-index:5}
   .fsel.on{background:#ffd400;border-color:#15181d}
   #toast{position:fixed;left:50%;bottom:calc(var(--sab) + 92px);transform:translateX(-50%) translateY(8px);background:#15181d;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:400;border:1px solid var(--line)}
@@ -195,7 +198,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v51</div>
+  <div id="setupVer">Red Planning Tool v52</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -244,7 +247,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v51</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v52</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -379,7 +382,7 @@ const ARROW_LEN=330;
 let uid=1; const nid=()=>'o'+(uid++);
 
 let state={
-  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,formations:[{color:PALETTE[0],name:'MIG',ships:4}],redAlts:[],
+  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,formations:[{color:PALETTE[0],name:'MIG',ships:4}],redAlts:[],
   cards:[{name:'Alpha',title:'Red OCA – Vul+0',objects:[]}],cur:0,turnDir:-1,tx:0,ty:0,showMode:false,
   title:'Red OCA – Vul+0',objects:null,selected:null
 };
@@ -469,9 +472,7 @@ function buildEl(o){
 function lmode(){return state.layoutMode||1;}
 function pageSize(){return lmode()===2?3150:1680;}
 function applyPageSize(){W=H=pageSize();if(scene){scene.style.width=W+'px';scene.style.height=H+'px';}}
-function arrowGeo(){const PS=pageSize();
-  if(lmode()===2)return {th:Math.round(PS*0.06),len:Math.round(PS*0.15),fs:68,lbl:true};
-  return {th:Math.round(PS*0.04),len:Math.round(PS*0.10),fs:28,lbl:false};}
+function arrowGeo(){const PS=pageSize(),th=Math.round(PS*0.04),len=Math.round(PS*0.10);return {th,len,fs:Math.round(th*0.42),lbl:lmode()===2};}
 function modeScale(){return lmode()===2?1.5:1;}
 function ppnm(){return W/(state.scaleNM||25);}
 function defaultScaleNM(){return (state.scaleNM===40)?20:10;}
@@ -668,6 +669,7 @@ function drawFrame(inner,spec){
 }
 function bandStr(lo,hi){const s=x=>x===0?'SFC':String(x);return lo===hi?s(lo):s(lo)+'-'+s(hi);}
 function addGroupAlts(inner,spec){
+  if(state.showGroupAlt===false)return;
   const geo=arrowGeo(),len=geo.len,th=geo.th,R=3*ppnm();
   const arr=[];
   for(const o of state.objects){if(o.type!=='arrow')continue;
@@ -706,7 +708,8 @@ function flash(msg){let t=$('toast');if(!t){t=document.createElement('div');t.id
   t.textContent=msg;t.className='show';clearTimeout(_toastT);_toastT=setTimeout(()=>{t.className='';},1700);}
 function renderShow(){scene.innerHTML="";const labelH=64,gap=90,side=W;
   const frames=showFrames(),N=frames.length,sel=cardFrames();
-  scene.style.width=(N*side+(N-1)*gap)+'px';scene.style.height=(labelH+side+20)+'px';
+  const legOn=state.showLegend!==false,scW=N*side+(N-1)*gap,legGap=Math.round(side*0.03),legH=legOn?Math.round(side*0.14):0;
+  scene.style.width=scW+'px';scene.style.height=(labelH+side+legGap+legH+20)+'px';
   staticMode=true;
   frames.forEach((fr,i)=>{const px=i*(side+gap);
     const lab=document.createElement('div');lab.className='phase-label';lab.style.left=px+'px';lab.style.top='10px';lab.style.width=side+'px';lab.textContent=fr.label;scene.appendChild(lab);
@@ -719,6 +722,7 @@ function renderShow(){scene.innerHTML="";const labelH=64,gap=90,side=W;
     bdg.addEventListener('pointerdown',e=>e.stopPropagation());
     bdg.addEventListener('click',e=>{e.stopPropagation();toggleCardFrame(fr);});
     scene.appendChild(bdg);});
+  if(legOn){const lg=legendEl(curCard().objects,Math.round(side*0.022),true);lg.style.position='absolute';lg.style.left='0';lg.style.top=(labelH+side+legGap)+'px';lg.style.width=scW+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';scene.appendChild(lg);}
   staticMode=false;renderShowHud();}
 function renderShowHud(){const hud=$('showHud');if(!hud)return;
   const n=lmode(),roman=['','I','II','III'][n]||'I',card=curCard(),objs=(card&&card.objects)||state.objects||[];
@@ -729,7 +733,12 @@ function renderShowHud(){const hud=$('showHud');if(!hud)return;
   if(!(card&&card.actionRange))warns.push('No ACTION range set');
   let h='<div class="hud-sel">SELECT '+n+'</div><div class="hud-sub">Layout '+roman+' \u00b7 tap '+n+' tile'+(n>1?'s':'')+' to include</div>';
   if(warns.length)h+='<div class="hud-warns">'+warns.map(w=>'<div class="hud-warn">\u26a0 '+esc(w)+'</div>').join('')+'</div>';
-  hud.innerHTML=h;hud.style.display='block';}
+  const legOn=state.showLegend!==false,altOn=state.showGroupAlt!==false;
+  h+='<div class="hud-tog"><button id="togLeg" class="hud-btn'+(legOn?' on':'')+'">Legend '+(legOn?'ON':'OFF')+'</button><button id="togAlt" class="hud-btn'+(altOn?' on':'')+'">Alt blocks '+(altOn?'ON':'OFF')+'</button></div>';
+  hud.innerHTML=h;hud.style.display='block';
+  const tl=$('togLeg'),ta=$('togAlt');
+  if(tl){tl.addEventListener('pointerdown',e=>e.stopPropagation());tl.onclick=e=>{e.stopPropagation();state.showLegend=!legOn;persist();renderShow();};}
+  if(ta){ta.addEventListener('pointerdown',e=>e.stopPropagation());ta.onclick=e=>{e.stopPropagation();state.showGroupAlt=!altOn;persist();renderShow();};}}
 function enterShow(){state.showMode=true;state.selected=null;scene.classList.add('show');renderShow();updateActions();fitZoom();closeSheets();}
 function exitShow(){state.showMode=false;scene.classList.remove('show');scene.style.width=W+'px';scene.style.height=H+'px';const hud=$('showHud');if(hud)hud.style.display='none';render();updateActions();fitZoom();}
 
@@ -1052,7 +1061,7 @@ $('canvasWrap').addEventListener('pointerdown',e=>{const showPan=state.showMode&
 
 /* ============ SAVE / LOAD / PRINT / CLEAR ============ */
 function applyLoaded(d){
-  const ns={defaultAngle:d.defaultAngle||180,active:d.active||0,zoom:1,tx:0,ty:0,turnDir:-1,showMode:false,perPage:d.perPage||2,layoutMode:d.layoutMode||1,scaleNM:d.scaleNM||25,fightAxis:(d.fightAxis==null?null:d.fightAxis),mission:d.mission||null,formations:d.formations||[],redAlts:Array.isArray(d.redAlts)?d.redAlts:[],cards:d.cards,cur:d.cur||0,selected:null};
+  const ns={defaultAngle:d.defaultAngle||180,active:d.active||0,zoom:1,tx:0,ty:0,turnDir:-1,showMode:false,perPage:d.perPage||2,layoutMode:d.layoutMode||1,scaleNM:d.scaleNM||25,fightAxis:(d.fightAxis==null?null:d.fightAxis),mission:d.mission||null,showLegend:d.showLegend!==false,showGroupAlt:d.showGroupAlt!==false,formations:d.formations||[],redAlts:Array.isArray(d.redAlts)?d.redAlts:[],cards:d.cards,cur:d.cur||0,selected:null};
   if(!ns.cards||!ns.cards.length){ns.cards=[{name:'Alpha',title:d.title||'',objects:d.objects||[]}];ns.cur=0;}
   ns.cards.forEach(c=>{if(!Array.isArray(c.objects))c.objects=[];});
   if(!ns.formations.length)ns.formations=[{color:PALETTE[0],name:'A',ships:1}];
@@ -1063,7 +1072,7 @@ function applyLoaded(d){
 }
 let _saveT=null;
 function persist(){try{if(_saveT)clearTimeout(_saveT);}catch(_){}
-  _saveT=setTimeout(()=>{try{localStorage.setItem('dca_coord_card',JSON.stringify({defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,mission:state.mission,cards:state.cards,cur:state.cur}));}catch(_){}},400);}
+  _saveT=setTimeout(()=>{try{localStorage.setItem('dca_coord_card',JSON.stringify({defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,mission:state.mission,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,cards:state.cards,cur:state.cur}));}catch(_){}},400);}
 function tryRestore(){let s=null;try{s=localStorage.getItem('dca_coord_card');}catch(_){return false;}if(!s)return false;
   let d;try{d=JSON.parse(s);}catch(_){return false;}if(!d||(!d.cards&&!d.objects))return false;applyLoaded(d);return true;}
 
@@ -1075,7 +1084,7 @@ function ensureMission(){if(!state.mission)state.mission=defaultMission();return
 function pad2(n){return ('0'+n).slice(-2);}
 function missionBase(m){return m.date+'_'+m.ampm+'_'+(MTYPE_TOKEN[m.type]||m.type);}
 function missionName(m){return missionBase(m)+'_v'+pad2(m.version);}
-function serializableState(){return {defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,cards:state.cards,cur:state.cur};}
+function serializableState(){return {defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,cards:state.cards,cur:state.cur};}
 function buildMissionObj(){return {app:'RedPlanningTool',fmt:1,mission:Object.assign({},ensureMission()),savedAt:new Date().toISOString(),state:serializableState()};}
 function msIndex(){try{return JSON.parse(localStorage.getItem('rpt_missions')||'[]');}catch(_){return [];}}
 function msSetIndex(a){try{localStorage.setItem('rpt_missions',JSON.stringify(a));}catch(_){}}
@@ -1131,22 +1140,23 @@ function buildBand(page,card,x,y,w,h){
   const sep=document.createElement('div');sep.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:0;border-top:2px solid #111';page.appendChild(sep);
   const hdr=document.createElement('div');hdr.style.cssText='position:absolute;left:'+x+'px;top:'+(y+4)+'px;width:'+w+'px;font-size:12px;font-weight:800;color:#111';
   hdr.innerHTML=esc((card.name||'').toUpperCase())+' <span style="font-weight:600;color:#666">'+esc(card.title||'')+'</span>';page.appendChild(hdr);
-  const headH=20,labelH=12,availH=h-headH-labelH;
+  const headH=20,labelH=12,availH=h-headH-labelH,legShow=state.showLegend!==false;
   const boxW=Math.floor((w-(N-1)*gap)/N),boxTop=y+headH+labelH;
-  const side=Math.min(boxW,Math.max(60,availH-44));
+  const side=Math.min(boxW,Math.max(60,availH-(legShow?44:0)));
   specs.forEach((sp,i)=>{const bx0=x+i*(boxW+gap);
     const lb=document.createElement('div');lb.style.cssText='position:absolute;left:'+bx0+'px;top:'+(y+headH)+'px;width:'+boxW+'px;font-size:9px;font-weight:700;text-align:center;color:#555';lb.textContent=frameLabel(sp,K,card);page.appendChild(lb);
     const bx=phaseBoxEl(card,sp,side,side);bx.style.position='absolute';bx.style.left=(bx0+(boxW-side)/2)+'px';bx.style.top=boxTop+'px';page.appendChild(bx);});
   const lgTop=boxTop+side+gap,lgH=(y+h)-lgTop;
-  if(lgH>10){const lg=legendEl(card.objects,11,true);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=lgTop+'px';lg.style.width=w+'px';lg.style.height=lgH+'px';lg.style.overflow='hidden';page.appendChild(lg);}
+  if(legShow&&lgH>10){const lg=legendEl(card.objects,11,true);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=lgTop+'px';lg.style.width=w+'px';lg.style.height=lgH+'px';lg.style.overflow='hidden';page.appendChild(lg);}
 }
 function buildCell(page,card,x,y,w,h){
   const headH=15,gap=5;
   const sp=(card.frames&&card.frames[0])?card.frames[0]:{type:'step',k:999};
   const hdr=document.createElement('div');hdr.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;font-size:11px;font-weight:800;color:#111;border-top:2px solid #111;padding-top:2px;text-align:center';hdr.textContent=(card.name||'').toUpperCase();page.appendChild(hdr);
-  const side=Math.min(w,h-headH-gap-54),boxTop=y+headH,legTop=boxTop+side+gap,legH=h-headH-side-gap;
+  const legShow=state.showLegend!==false;
+  const side=Math.min(w,h-headH-gap-(legShow?54:0)),boxTop=y+headH,legTop=boxTop+side+gap,legH=h-headH-side-gap;
   const bx=phaseBoxEl(card,sp,side,side);bx.style.position='absolute';bx.style.left=(x+(w-side)/2)+'px';bx.style.top=boxTop+'px';page.appendChild(bx);
-  const lg=legendEl(card.objects,9);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=legTop+'px';lg.style.width=w+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';page.appendChild(lg);
+  if(legShow){const lg=legendEl(card.objects,9);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=legTop+'px';lg.style.width=w+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';page.appendChild(lg);}
 }
 function buildPageFor(group){
   const SW=1008,SH=766,HALF=SW/2;
