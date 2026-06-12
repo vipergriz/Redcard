@@ -199,7 +199,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v61</div>
+  <div id="setupVer">Red Planning Tool v65</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -248,7 +248,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v61</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v65</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -484,7 +484,7 @@ function ensureScaleDefaults(){const objs=state.objects||[];if(objs.some(o=>o.ty
   const nm=defaultScaleNM(),len=nm*ppnm(),arrowsH=(state.defaultAngle===0||state.defaultAngle===180);
   const place=(kind)=>{const horiz=(kind==='azimuth')?!arrowsH:arrowsH;let x,y;
     if(horiz){x=Math.round((W-len)/2);y=Math.round(H*0.66);}else{x=Math.round(W*0.66);y=Math.round((H-len)/2);}
-    objs.push({id:nid(),type:'bracket',kind,phase:'both',nm,x,y});};
+    objs.push({id:nid(),type:'bracket',kind,phase:'push',nm,x,y});};
   place('range');place('azimuth');}
 function arrowFitLen(o){return arrowGeo().len;}
 function buildArrow(o){
@@ -541,18 +541,21 @@ function buildGhost(jet,end,head){
 function buildText(o){const d=document.createElement('div');d.className='txt'+(o.boxed?' boxed':'');d.textContent=o.text;d.style.fontSize=o.size+'px';d.style.fontWeight=o.bold?'800':'400';d.style.fontStyle=o.italic?'italic':'normal';d.style.color=o.color||'#000';return d;}
 function buildBracket(o){const nm=(o.nm!=null?o.nm:(parseFloat(o.label)||10));const w=Math.max(24,Math.round(nm*ppnm()));const MS=modeScale();
   const sw=(3.5*MS*(lmode()===2?1:1.3)).toFixed(1),tick=Math.round(16*MS),svh=Math.round(26*MS),fnt=Math.round(22*MS*(lmode()===2?1.75:3)),lbl=String(nm);
+  const clr=(!staticMode&&o.phase==='resolved')?'#8a9099':'#111';
   const arrowsH=(state.defaultAngle===0||state.defaultAngle===180);const horiz=(o.kind==='azimuth')?!arrowsH:arrowsH;
   const wrap=document.createElement('div');wrap.className='bracket';
   if(horiz){const ticksDown=(o.y+svh/2)<H/2;
     wrap.style.width=w+'px';wrap.style.height=(svh+fnt+8)+'px';
     const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',w);svg.setAttribute('height',svh);svg.setAttribute('viewBox',`0 0 ${w} ${svh}`);
-    const p=document.createElementNS(NS,'path');p.setAttribute('d',ticksDown?`M2 2 V${tick} M2 2 H${w-2} M${w-2} 2 V${tick}`:`M2 2 V${tick} M2 ${tick} H${w-2} M${w-2} ${tick} V2`);p.setAttribute('fill','none');p.setAttribute('stroke','#111');p.setAttribute('stroke-width',sw);svg.appendChild(p);wrap.appendChild(svg);
-    const n=document.createElement('div');n.className='num';n.style.fontSize=fnt+'px';n.style.top=(svh+2)+'px';n.textContent=lbl;wrap.appendChild(n);
+    const p=document.createElementNS(NS,'path');p.setAttribute('d',ticksDown?`M2 2 V${tick} M2 2 H${w-2} M${w-2} 2 V${tick}`:`M2 2 V${tick} M2 ${tick} H${w-2} M${w-2} ${tick} V2`);p.setAttribute('fill','none');p.setAttribute('stroke',clr);p.setAttribute('stroke-width',sw);svg.appendChild(p);wrap.appendChild(svg);
+    const n=document.createElement('div');n.className='num';n.style.fontSize=fnt+'px';n.style.top=(svh+2)+'px';n.style.color=clr;n.textContent=lbl;wrap.appendChild(n);
   }else{const ticksRight=(o.x+svh/2)<W/2;
     wrap.style.width=(svh+4)+'px';wrap.style.height=w+'px';
     const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',svh);svg.setAttribute('height',w);svg.setAttribute('viewBox',`0 0 ${svh} ${w}`);
-    const p=document.createElementNS(NS,'path');p.setAttribute('d',ticksRight?`M${tick} 2 H2 M2 2 V${w-2} M2 ${w-2} H${tick}`:`M2 2 H${tick} M${tick} 2 V${w-2} M${tick} ${w-2} H2`);p.setAttribute('fill','none');p.setAttribute('stroke','#111');p.setAttribute('stroke-width',sw);svg.appendChild(p);wrap.appendChild(svg);
-    const n=document.createElement('div');n.textContent=lbl;n.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-90deg);font-weight:700;font-size:'+fnt+'px;color:#111';wrap.appendChild(n);}
+    const p=document.createElementNS(NS,'path');p.setAttribute('d',ticksRight?`M${tick} 2 H2 M2 2 V${w-2} M2 ${w-2} H${tick}`:`M2 2 H${tick} M${tick} 2 V${w-2} M${tick} ${w-2} H2`);p.setAttribute('fill','none');p.setAttribute('stroke',clr);p.setAttribute('stroke-width',sw);svg.appendChild(p);wrap.appendChild(svg);
+    const n=document.createElement('div');n.textContent=lbl;
+    const lineX=ticksRight?2:tick,tickDir=ticksRight?1:-1,cx=lineX+tickDir*(4*MS+0.5*fnt);
+    n.style.cssText='position:absolute;left:'+cx.toFixed(1)+'px;top:50%;transform:translate(-50%,-50%) rotate(-90deg);font-weight:700;line-height:1;font-size:'+fnt+'px;color:'+clr+';white-space:nowrap';wrap.appendChild(n);}
   return wrap;}
 function buildLine(o){const wrap=document.createElement('div');const HIT=28,bar=document.createElement('div');bar.style.position='absolute';bar.style.background='#000';
   if(o.orient==='v'){const w=Math.max(o.thickness,HIT);wrap.style.width=w+'px';wrap.style.height=o.length+'px';bar.style.left=((w-o.thickness)/2)+'px';bar.style.top='0';bar.style.width=o.thickness+'px';bar.style.height=o.length+'px';}
@@ -610,7 +613,7 @@ function arrowState(jet,s){
   const segs=chainGeom(jet);const idx=Math.min(s,segs.length);
   if(idx<=0)return {x:jet.x,y:jet.y,angle:jet.angle};
   const seg=segs[idx-1],un=ur(seg.endHead);
-  return {x:Math.round(seg.end.x+un.x*(arrowFitLen(jet)/2)),y:Math.round(seg.end.y+un.y*(arrowFitLen(jet)/2)),angle:seg.endHead};}
+  return {x:Math.round(seg.end.x-un.x*(arrowFitLen(jet)/2)),y:Math.round(seg.end.y-un.y*(arrowFitLen(jet)/2)),angle:seg.endHead};}
 function arrowElAt(o,st,opts){opts=opts||{};
   const t=Object.assign({},o,{x:st.x,y:st.y,angle:st.angle,man:[],maneuver:''});
   if(opts.noAlt)t.showAlt=false;
@@ -643,7 +646,7 @@ function lastSegTrail(inner,jet,n){const segs=chainGeom(jet);if(!segs.length)ret
   let d='';for(let i=start;i<segs.length;i++){const s=segs[i];d+='M'+s.pts[0].x.toFixed(1)+' '+s.pts[0].y.toFixed(1);for(let j=1;j<s.pts.length;j++)d+=' L'+s.pts[j].x.toFixed(1)+' '+s.pts[j].y.toFixed(1);}
   const path=document.createElementNS(NS,'path');path.setAttribute('d',d);path.setAttribute('fill','none');path.setAttribute('stroke',col);path.setAttribute('stroke-width',th);path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);
   inner.appendChild(svg);}
-function bracketShows(o,t){const ph=o.phase||'both';if(t==='combined')return true;if(t==='push')return ph==='push'||ph==='both';if(t==='step')return ph==='both';return ph==='resolved'||ph==='both';}
+function bracketShows(o,t){const res=(o.phase==='resolved');if(t==='resolved'||t==='origin'||t==='origin2')return res;if(t==='step')return false;if(t==='combined'&&printMode&&lmode()!==1)return false;return !res;}
 function presLegend(objs){const map=new Map();
   for(const o of objs){if(o.type!=='arrow')continue;const cs=(o.cs||'').toUpperCase()||'—';if(!map.has(cs))map.set(cs,{cs,color:(state.formations[o.formation]||{}).color||'#888',fi:(o.formation==null?99:o.formation),ship:(o.ship||0),alts:new Set(),blue:false});const e=map.get(cs);if(o.showAlt&&o.alt){e.alts.add(fmtAlt(o.alt));if(isBlueAlt(o.alt))e.blue=true;}}
   return [...map.values()].sort((a,b)=>a.fi-b.fi||a.ship-b.ship).map(e=>({cs:e.cs,color:e.color,alt:[...e.alts].join(', '),blue:e.blue}));}
@@ -671,7 +674,7 @@ function drawFrame(inner,spec){
   }
   addGroupAlts(inner,spec);
   if(spec.type==='resolved'||spec.type==='origin'||spec.type==='origin2'){
-    const d=ur(state.defaultAngle),off=15*ppnm();
+    const d=ur(state.defaultAngle),off=((state.scaleNM||25)===40?12:8)*ppnm();
     inner.style.transform='translate('+(-d.x*off).toFixed(1)+'px,'+(-d.y*off).toFixed(1)+'px)';
   }
 }
@@ -783,7 +786,7 @@ function addObject(type){const c=viewCenter(),j=()=>Math.random()*26-13;let o={i
   if(type==='arrow'){const fi=state.active,f=state.formations[fi]||{name:'',ships:1};const ship=(f.ships||1)>1?nextShipNum(fi):0;
     Object.assign(o,{formation:fi,ship,cs:csFor(fi,ship),alt:'',showAlt:true,len:330,th:102,angle:state.defaultAngle,man:[],maneuver:"",ea:false,fontSize:47});}
   else if(type==='text')Object.assign(o,{text:"PUSH",size:22,bold:true,italic:false,boxed:false,color:"#000000"});
-  else if(type==='bracket'||type==='azimuth'){o.type='bracket';Object.assign(o,{kind:type==='azimuth'?'azimuth':'range',phase:'both',nm:defaultScaleNM()});}
+  else if(type==='bracket'||type==='azimuth'){o.type='bracket';Object.assign(o,{kind:type==='azimuth'?'azimuth':'range',phase:'push',nm:defaultScaleNM()});}
   else if(type==='line')Object.assign(o,{orient:'v',length:360,thickness:3});
   else if(type==='legend'){if(state.objects.some(x=>x.type==='legend'))return;}
   else if(type==='north')Object.assign(o,{size:46});
@@ -930,7 +933,7 @@ function buildInspector(o){
     h+=`<div class="toggle"><span>Boxed border</span><div class="switch" data-toggle="boxed"><i></i></div></div>`;
   }else if(o.type==='bracket'){
     h+=`<div class="field"><label>Bar type</label><div class="seg" id="iKind"><button data-kind="range">Range ↔</button><button data-kind="azimuth">Azimuth ↕</button></div></div>`;
-    h+=`<div class="field"><label>Show on which tile</label><div class="seg" id="iPhase"><button data-ph="push">PUSH</button><button data-ph="resolved">RESOLVED</button><button data-ph="both">Both</button></div></div>`;
+    h+=`<div class="field"><label>Show on which tile</label><div class="seg" id="iPhase"><button data-ph="push">PUSH</button><button data-ph="resolved">RESOLVED</button></div></div>`;
     h+=fld('Size (NM) — bar drawn to scale','<input type="number" inputmode="numeric" min="1" data-k="nm" data-num>');}
   else if(o.type==='line'){h+=`<div class="field"><label>Orientation</label><div class="seg" id="iOrient"><button data-or="v">Vertical</button><button data-or="h">Horizontal</button></div></div>`;
     h+=fld('Length','<input class="slider" type="range" min="30" max="1000" data-k="length" data-num>');h+=fld('Thickness','<input class="slider" type="range" min="1" max="12" data-k="thickness" data-num>');}
@@ -958,7 +961,7 @@ function buildInspector(o){
   const dir=body.querySelector('#iDir');if(dir)[...dir.children].forEach(b=>{b.classList.toggle('sel',+b.dataset.ang===o.angle);b.onclick=()=>{o.angle=+b.dataset.ang;[...dir.children].forEach(x=>x.classList.toggle('sel',x===b));render();};});
   const orient=body.querySelector('#iOrient');if(orient)[...orient.children].forEach(b=>{b.classList.toggle('sel',b.dataset.or===o.orient);b.onclick=()=>{o.orient=b.dataset.or;[...orient.children].forEach(x=>x.classList.toggle('sel',x===b));render();};});
   const ik=body.querySelector('#iKind');if(ik)[...ik.children].forEach(b=>{b.classList.toggle('sel',(o.kind||'range')===b.dataset.kind);b.onclick=()=>{o.kind=b.dataset.kind;[...ik.children].forEach(x=>x.classList.toggle('sel',x===b));render();};});
-  const iph=body.querySelector('#iPhase');if(iph)[...iph.children].forEach(b=>{b.classList.toggle('sel',(o.phase||'both')===b.dataset.ph);b.onclick=()=>{o.phase=b.dataset.ph;[...iph.children].forEach(x=>x.classList.toggle('sel',x===b));render();};});
+  const iph=body.querySelector('#iPhase');if(iph)[...iph.children].forEach(b=>{b.classList.toggle('sel',(o.phase==='resolved'?'resolved':'push')===b.dataset.ph);b.onclick=()=>{o.phase=b.dataset.ph;[...iph.children].forEach(x=>x.classList.toggle('sel',x===b));render();};});
   const fch=body.querySelector('#iFchips');if(fch)state.formations.forEach((f,i)=>{const d=document.createElement('div');d.className='chip'+(i===o.formation?' sel':'');d.style.background=f.color;d.style.color=textColorFor(f.color);d.textContent=(f.name||'').toUpperCase()||(i+1);
     d.onclick=()=>{o.formation=i;o.cs=csFor(i,o.ship||0);buildInspector(o);render();};fch.appendChild(d);});
   const ship=body.querySelector('#iShip');if(ship)[...ship.children].forEach(b=>{const n=+b.dataset.n;b.classList.toggle('sel',(o.ship||0)===n);b.onclick=()=>{if(n>0&&o.ship!==n&&usedShips(o.formation).has(n)){flash(csFor(o.formation,n)+' already placed');return;}o.ship=n;o.cs=csFor(o.formation,o.ship);buildInspector(o);render();};});
