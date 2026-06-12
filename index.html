@@ -110,7 +110,8 @@
   .slider{width:100%;accent-color:var(--accent);height:34px}
   .addgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .addgrid .btn{padding:16px;border-radius:13px;text-align:center}
-  .chainsum{margin:10px 0;font-weight:700;font-size:15px}
+  .chainsum{margin:10px 0;font-weight:700;font-size:15px;white-space:nowrap;overflow-x:auto;height:20px;line-height:20px}
+  .chainsum[data-empty]{color:var(--muted);opacity:.55}
 
   .alt-tape{display:flex;flex-direction:column;gap:3px}
   .alt-row{position:relative;padding:9px;border-radius:7px;border:1px solid #2a4a6b;background:#1f3a57;color:#cfe3f5;font-weight:700;text-align:center;font-family:"Courier New",monospace}
@@ -198,7 +199,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v52</div>
+  <div id="setupVer">Red Planning Tool v57</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -247,7 +248,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v52</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v57</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -374,7 +375,7 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const cssv=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-const PALETTE=['#E8231F','#F47A1F','#9E1B32','#F0529C','#E0A30B','#B5451F','#C42E8A','#7E2D12'];
+const PALETTE=['#E8231F','#F47A1F','#8A3A1E','#FF4FB2','#E0A30B','#B0228F','#F08A6A','#6E2438'];
 const MANEUVERS=["Drag","Beam","Flank","Turn Hot","Continue"];
 const LETTERS=['Alpha','Bravo','Charlie','Delta','Echo','Foxtrot','Golf','Hotel'];
 let W=1680,H=1680;
@@ -472,7 +473,10 @@ function buildEl(o){
 function lmode(){return state.layoutMode||1;}
 function pageSize(){return lmode()===2?3150:1680;}
 function applyPageSize(){W=H=pageSize();if(scene){scene.style.width=W+'px';scene.style.height=H+'px';}}
-function arrowGeo(){const PS=pageSize(),th=Math.round(PS*0.04),len=Math.round(PS*0.10);return {th,len,fs:Math.round(th*0.42),lbl:lmode()===2};}
+function arrowGeo(){const PS=pageSize();let th=Math.round(PS*0.04),len=Math.round(PS*0.10);
+  if(lmode()!==2&&(state.scaleNM||25)===40){th=Math.round(th*1.5);len=Math.round(len*1.5);}
+  return {th,len,fs:Math.round(th*0.42),lbl:lmode()===2};}
+function manThk(jet){return (jet.manTh||6)*(lmode()===2?1:1.5);}
 function modeScale(){return lmode()===2?1.5:1;}
 function ppnm(){return W/(state.scaleNM||25);}
 function defaultScaleNM(){return (state.scaleNM===40)?20:10;}
@@ -496,7 +500,7 @@ function buildArrow(o){
    if(txt&&!staticMode){const l=document.createElement('div');l.className='lbl';l.innerHTML=esc(txt)+(blue?'<span style="color:#d11">*</span>':'');l.style.color=tcol;l.style.fontSize=geo.fs+'px';
      const aa=((o.angle%360)+360)%360,vert=(aa>45&&aa<135)||(aa>225&&aa<315);if(vert)l.style.transform='translate(-50%,-50%) rotate(-90deg)';
      wrap.appendChild(l);}}
-  if(o.ea){const MS=modeScale(),a=o.angle*Math.PI/180,d=len/2+16*MS,eb=Math.round(34*MS);const b=document.createElementNS(NS,'svg');b.setAttribute('class','ea-bolt');b.setAttribute('width',eb);b.setAttribute('height',eb);b.setAttribute('viewBox','0 0 18 18');b.style.left=(Math.cos(a)*d)+'px';b.style.top=(Math.sin(a)*d)+'px';const p=document.createElementNS(NS,'path');p.setAttribute('d',BOLT);p.setAttribute('fill','#FFD400');p.setAttribute('stroke','#9a6b00');p.setAttribute('stroke-width','.8');b.appendChild(p);wrap.appendChild(b);}
+  if(o.ea){const MS=modeScale(),a=o.angle*Math.PI/180,d=len/2+16*MS,eb=Math.round(th);const b=document.createElementNS(NS,'svg');b.setAttribute('class','ea-bolt');b.setAttribute('width',eb);b.setAttribute('height',eb);b.setAttribute('viewBox','0 0 18 18');b.style.left=(Math.cos(a)*d)+'px';b.style.top=(Math.sin(a)*d)+'px';const p=document.createElementNS(NS,'path');p.setAttribute('d',BOLT);p.setAttribute('fill','#FFD400');p.setAttribute('stroke','#9a6b00');p.setAttribute('stroke-width','.8');b.appendChild(p);wrap.appendChild(b);}
   if(o.maneuver){const m=document.createElement('div');m.className='maneuver';m.textContent=o.maneuver;m.style.left='0px';m.style.top=(th/2+6)+'px';wrap.appendChild(m);}
   return wrap;
 }
@@ -507,7 +511,7 @@ function trimStart(pts,gap){if(pts.length<2)return pts.slice();
   if(j>=pts.length)return pts.slice();const b=pts[j];const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;const t=Math.min(gap/L,0.85);
   return [{x:a.x+dx*t,y:a.y+dy*t},...pts.slice(j)];}
 function chainArrowsSvg(jet,kk){
-  const f=state.formations[jet.formation]||{color:PALETTE[0]};const col=f.color,th=jet.manTh||6;
+  const f=state.formations[jet.formation]||{color:PALETTE[0]};const col=f.color,th=manThk(jet);
   const segs=chainGeom(jet);if(!segs.length)return null;kk=(kk==null)?segs.length:Math.min(kk,segs.length);if(kk<=0)return null;
   const hl=th*2.6+6,gap=hl*0.5;
   const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
@@ -564,16 +568,16 @@ function buildNorth(o){const s=o.size;const wrap=document.createElement('div');w
   const top=document.createElementNS(NS,'polygon');top.setAttribute('points','11,0 22,20 11,16 0,20');top.setAttribute('fill','#b3261e');
   const bot=document.createElementNS(NS,'polygon');bot.setAttribute('points','11,40 0,20 11,24 22,20');bot.setAttribute('fill','#fff');bot.setAttribute('stroke','#b3261e');bot.setAttribute('stroke-width','1');
   svg.appendChild(bot);svg.appendChild(top);const lab=document.createElement('div');lab.className='label';lab.textContent='N';wrap.appendChild(svg);wrap.appendChild(lab);return wrap;}
-function buildRedPt(o){const MS=modeScale(),s=(o.size||34)*MS;const wrap=document.createElement('div');wrap.style.width='0';wrap.style.height='0';
-  const RED='#c4302a',d=ur(state.defaultAngle),ax=state.fightAxis,C=300*MS;
+function buildRedPt(o){const MS=modeScale(),s=(o.size||34)*MS*1.5;const wrap=document.createElement('div');wrap.style.width='0';wrap.style.height='0';
+  const RED='#c4302a',d=ur(state.defaultAngle),ax=state.fightAxis,C=450*MS;
   const asvg=document.createElementNS(NS,'svg');asvg.setAttribute('width',2*C);asvg.setAttribute('height',2*C);asvg.setAttribute('viewBox',(-C)+' '+(-C)+' '+(2*C)+' '+(2*C));
   asvg.style.position='absolute';asvg.style.left=(-C)+'px';asvg.style.top=(-C)+'px';asvg.style.pointerEvents='none';asvg.style.overflow='visible';
-  const gap=s/2+12*MS,L=200*MS,sx=d.x*gap,sy=d.y*gap,ex=d.x*(gap+L),ey=d.y*(gap+L);
-  const line=document.createElementNS(NS,'path');line.setAttribute('d','M'+sx.toFixed(1)+' '+sy.toFixed(1)+' L'+ex.toFixed(1)+' '+ey.toFixed(1));line.setAttribute('stroke',RED);line.setAttribute('stroke-width',(3*MS).toFixed(1));line.setAttribute('stroke-dasharray',(11*MS).toFixed(1)+' '+(9*MS).toFixed(1));line.setAttribute('fill','none');line.setAttribute('stroke-linecap','round');asvg.appendChild(line);
-  svgHead(asvg,{x:ex,y:ey},state.defaultAngle,RED,6*MS);
+  const gap=s/2+18*MS,L=300*MS,sx=d.x*gap,sy=d.y*gap,ex=d.x*(gap+L),ey=d.y*(gap+L);
+  const line=document.createElementNS(NS,'path');line.setAttribute('d','M'+sx.toFixed(1)+' '+sy.toFixed(1)+' L'+ex.toFixed(1)+' '+ey.toFixed(1));line.setAttribute('stroke',RED);line.setAttribute('stroke-width',(4.5*MS).toFixed(1));line.setAttribute('stroke-dasharray',(16.5*MS).toFixed(1)+' '+(13.5*MS).toFixed(1));line.setAttribute('fill','none');line.setAttribute('stroke-linecap','round');asvg.appendChild(line);
+  svgHead(asvg,{x:ex,y:ey},state.defaultAngle,RED,9*MS);
   let px=-d.y,py=d.x;if(py>0){px=-px;py=-py;}const midF=gap+L/2;
-  const tx=(d.x*midF+px*26*MS),ty=(d.y*midF+py*26*MS);
-  const t=document.createElementNS(NS,'text');t.setAttribute('x',tx.toFixed(1));t.setAttribute('y',ty.toFixed(1));t.setAttribute('fill',RED);t.setAttribute('font-size',(31*MS).toFixed(1));t.setAttribute('font-weight','800');t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','middle');
+  const tx=(d.x*midF+px*39*MS),ty=(d.y*midF+py*39*MS);
+  const t=document.createElementNS(NS,'text');t.setAttribute('x',tx.toFixed(1));t.setAttribute('y',ty.toFixed(1));t.setAttribute('fill',RED);t.setAttribute('font-size',(46.5*MS).toFixed(1));t.setAttribute('font-weight','800');t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','middle');
   const vert=Math.abs((((state.defaultAngle%180)+180)%180)-90)<45;
   if(vert)t.setAttribute('transform','rotate(-90 '+tx.toFixed(1)+' '+ty.toFixed(1)+')');
   t.textContent='AXIS '+((ax==null||isNaN(ax))?'—':((''+Math.round(((ax%360)+360)%360)).padStart(3,'0')+'°'));asvg.appendChild(t);wrap.appendChild(asvg);
@@ -614,7 +618,7 @@ function arrowElAt(o,st,opts){opts=opts||{};
 // draw the maneuver trail for only the first k segments (+ heads at shown joints)
 function partialChain(inner,jet,k){
   const segs=chainGeom(jet);if(!segs.length)return;const kk=Math.min(k,segs.length);
-  const f=state.formations[jet.formation]||{color:PALETTE[0]};const col=f.color,th=jet.manTh||6;
+  const f=state.formations[jet.formation]||{color:PALETTE[0]};const col=f.color,th=manThk(jet);
   const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox','0 0 '+W+' '+H);
   svg.style.position='absolute';svg.style.left='0';svg.style.top='0';svg.style.pointerEvents='none';
   let d='';for(let i=0;i<kk;i++){const s=segs[i];d+='M'+s.pts[0].x.toFixed(1)+' '+s.pts[0].y.toFixed(1);for(let j=1;j<s.pts.length;j++)d+=' L'+s.pts[j].x.toFixed(1)+' '+s.pts[j].y.toFixed(1);}
@@ -633,7 +637,7 @@ function showFrames(){
   if(K>=2)frames.push({type:'origin2',label:'RESOLVED'});
   return frames;}
 function lastSegTrail(inner,jet,n){const segs=chainGeom(jet);if(!segs.length)return;n=n||1;const start=Math.max(0,segs.length-n);
-  const f=state.formations[jet.formation]||{color:PALETTE[0]};const col=f.color,th=jet.manTh||6;
+  const f=state.formations[jet.formation]||{color:PALETTE[0]};const col=f.color,th=manThk(jet);
   const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox','0 0 '+W+' '+H);
   svg.style.position='absolute';svg.style.left='0';svg.style.top='0';svg.style.pointerEvents='none';
   let d='';for(let i=start;i<segs.length;i++){const s=segs[i];d+='M'+s.pts[0].x.toFixed(1)+' '+s.pts[0].y.toFixed(1);for(let j=1;j<s.pts.length;j++)d+=' L'+s.pts[j].x.toFixed(1)+' '+s.pts[j].y.toFixed(1);}
@@ -641,17 +645,17 @@ function lastSegTrail(inner,jet,n){const segs=chainGeom(jet);if(!segs.length)ret
   inner.appendChild(svg);}
 function bracketShows(o,t){const ph=o.phase||'both';if(t==='combined')return true;if(t==='push')return ph==='push'||ph==='both';if(t==='step')return ph==='both';return ph==='resolved'||ph==='both';}
 function presLegend(objs){const map=new Map();
-  for(const o of objs){if(o.type!=='arrow')continue;const cs=(o.cs||'').toUpperCase()||'—';if(!map.has(cs))map.set(cs,{cs,color:(state.formations[o.formation]||{}).color||'#888',fi:(o.formation==null?99:o.formation),ship:(o.ship||0),alts:new Set()});if(o.showAlt&&o.alt)map.get(cs).alts.add(fmtAlt(o.alt));}
-  return [...map.values()].sort((a,b)=>a.fi-b.fi||a.ship-b.ship).map(e=>({cs:e.cs,color:e.color,alt:[...e.alts].join(', ')}));}
+  for(const o of objs){if(o.type!=='arrow')continue;const cs=(o.cs||'').toUpperCase()||'—';if(!map.has(cs))map.set(cs,{cs,color:(state.formations[o.formation]||{}).color||'#888',fi:(o.formation==null?99:o.formation),ship:(o.ship||0),alts:new Set(),blue:false});const e=map.get(cs);if(o.showAlt&&o.alt){e.alts.add(fmtAlt(o.alt));if(isBlueAlt(o.alt))e.blue=true;}}
+  return [...map.values()].sort((a,b)=>a.fi-b.fi||a.ship-b.ship).map(e=>({cs:e.cs,color:e.color,alt:[...e.alts].join(', '),blue:e.blue}));}
 function legendEl(objs,fs,horiz){fs=fs||14;const lg=presLegend(objs);const box=document.createElement('div');
   if(!lg.length){box.textContent='';return box;}
-  if(horiz)box.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax('+Math.round(fs*8.5)+'px,1fr));gap:'+Math.round(fs*0.4)+'px '+Math.round(fs*0.9)+'px;align-content:flex-start';
-  else box.style.cssText='display:flex;flex-direction:column;gap:'+Math.max(2,Math.round(fs*0.4))+'px';
+  if(horiz)box.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax('+Math.round(fs*8.5)+'px,1fr));gap:'+Math.round(fs*0.4)+'px '+Math.round(fs*0.9)+'px;align-content:flex-start;background:rgba(255,255,255,.97);border-radius:7px;box-sizing:border-box;padding:'+Math.round(fs*0.4)+'px';
+  else box.style.cssText='display:flex;flex-direction:column;gap:'+Math.max(2,Math.round(fs*0.4))+'px;background:rgba(255,255,255,.97);border-radius:6px;box-sizing:border-box;padding:'+Math.round(fs*0.3)+'px';
   lg.forEach(e=>{const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:'+Math.round(fs*0.45)+'px;font-family:\"Courier New\",monospace;font-size:'+fs+'px;color:#111;line-height:1.1;white-space:nowrap';
     const sw=document.createElement('span');sw.style.cssText='display:inline-block;width:'+fs+'px;height:'+fs+'px;border-radius:3px;background:'+e.color+';flex:0 0 auto;border:1px solid rgba(0,0,0,.25)';
     const cs=document.createElement('span');cs.style.cssText='font-weight:800';cs.textContent=e.cs;
     row.append(sw,cs);
-    if(e.alt){const al=document.createElement('span');al.style.cssText='font-weight:600;color:#555';al.textContent=e.alt;row.append(al);}
+    if(e.alt){const al=document.createElement('span');al.style.cssText='font-weight:800;color:'+(e.blue?'#1763d6':'#cf1a1a');al.textContent=e.alt;row.append(al);}
     box.appendChild(row);});
   return box;}
 function drawFrame(inner,spec){
@@ -769,6 +773,7 @@ function viewCenter(){const r=canvas.getBoundingClientRect(),sr=scene.getBoundin
 function shipsOf(fi){return (state.formations[fi]&&state.formations[fi].ships)||1;}
 function usedShips(fi){return new Set(state.objects.filter(o=>o.type==='arrow'&&o.formation===fi&&o.ship>0).map(o=>o.ship));}
 function unnumberedCount(fi){return state.objects.filter(o=>o.type==='arrow'&&o.formation===fi&&!(o.ship>0)).length;}
+function formationCount(fi){return state.objects.filter(o=>o.type==='arrow'&&o.formation===fi).length;}
 function nextShipNum(fi){const used=usedShips(fi),N=shipsOf(fi);for(let k=1;k<=N;k++)if(!used.has(k))return k;return 0;}
 function addObject(type){const c=viewCenter(),j=()=>Math.random()*26-13;let o={id:nid(),type,x:Math.round(c.x+j()),y:Math.round(c.y+j())};
   if(type==='arrow'){const fi=state.active,f=state.formations[fi]||{name:'',ships:1};const ship=(f.ships||1)>1?nextShipNum(fi):0;
@@ -784,9 +789,9 @@ function duplicateSel(){const o=getSel();if(!o)return;const c=JSON.parse(JSON.st
 function nextFighter(){const sel=getSel();let fi,numbered;
   if(sel&&sel.type==='arrow'){fi=sel.formation;numbered=(sel.ship||0)>0;}else{fi=state.active;numbered=shipsOf(fi)>1;}
   let slot=null;
-  for(let f=fi;f<state.formations.length&&!slot;f++){const N=shipsOf(f);
+  for(let f=fi;f<state.formations.length&&!slot;f++){const N=shipsOf(f);if(formationCount(f)>=N)continue;
     if(numbered){const used=usedShips(f);for(let k=1;k<=N;k++)if(!used.has(k)){slot={fi:f,ship:k};break;}}
-    else if(unnumberedCount(f)<N)slot={fi:f,ship:0};}
+    else slot={fi:f,ship:0};}
   if(!slot){flash('All fighters placed');return;}
   const b=(sel&&sel.type==='arrow')?sel:null,c=viewCenter();
   const ang=b?b.angle:state.defaultAngle,pa=ang*Math.PI/180,D=1.5*arrowGeo().th,px=-Math.sin(pa),py=Math.cos(pa);
@@ -895,7 +900,7 @@ function buildInspector(o){
     h+=`<div class="sub-h" style="margin-top:0;border-top:none;padding-top:0">Maneuvers — tap to chain (max 6)</div>`;
     h+=`<div class="seg" id="iTurn" style="margin-bottom:8px"><button data-d="-1">Turn left</button><button data-d="1">Turn right</button></div>`;
     h+=`<div class="preset" id="iMan">${MANEUVERS.map(m=>`<button data-m="${m}"${man.length>=6?' disabled style="opacity:.35"':''}>${m}</button>`).join('')}</div>`;
-    if(man.length)h+=`<div class="chainsum">${man.map(s=>esc(s.kind)+(s.kind==='Continue'?'':' '+(s.dir>0?'R':'L'))).join('  →  ')}</div><div class="row"><button class="btn" id="manUndo">Undo last</button><button class="btn danger" id="manClear">Clear</button></div>`;
+    h+=`<div class="chainsum"${man.length?'':' data-empty="1"'}>${man.length?man.map(s=>esc(s.kind)+(s.kind==='Continue'?'':' '+(s.dir>0?'R':'L'))).join('  →  '):'— no maneuvers yet —'}</div><div class="row"><button class="btn" id="manUndo"${man.length?'':' disabled style="opacity:.4"'}>Undo last</button><button class="btn danger" id="manClear"${man.length?'':' disabled style="opacity:.4"'}>Clear</button></div>`;
     h+=`<p style="color:var(--muted);font-size:13px;margin:8px 0 0">Set left/right, then tap a maneuver. Continue extends straight one arrow-length. On the card, tap the jet or its faded end-arrow to add the next.</p>`;
     h+=`<div class="sub-h">Altitude</div>`;
     h+=fld('Thousands of feet','<input type="text" data-k="alt" placeholder="e.g. 22 or 22.5">');
