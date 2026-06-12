@@ -199,7 +199,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v60</div>
+  <div id="setupVer">Red Planning Tool v61</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -248,7 +248,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v60</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v61</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -670,6 +670,10 @@ function drawFrame(inner,spec){
       const cs=chainArrowsSvg(o,spec.k);if(cs)inner.appendChild(cs);continue;}
   }
   addGroupAlts(inner,spec);
+  if(spec.type==='resolved'||spec.type==='origin'||spec.type==='origin2'){
+    const d=ur(state.defaultAngle),off=15*ppnm();
+    inner.style.transform='translate('+(-d.x*off).toFixed(1)+'px,'+(-d.y*off).toFixed(1)+'px)';
+  }
 }
 function bandStr(lo,hi){const s=x=>x===0?'SFC':String(x);return lo===hi?s(lo):s(lo)+'-'+s(hi);}
 function addGroupAlts(inner,spec){
