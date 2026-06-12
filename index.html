@@ -45,11 +45,11 @@
   #scene.show{background:transparent;border:none;box-shadow:none}
   .phase-label{position:absolute;text-align:center;font-weight:800;font-size:34px;color:#0e1117;letter-spacing:.5px}
   .phase-box{position:absolute;background:#fff;border:3px solid #15181d;border-radius:16px;overflow:hidden;box-shadow:0 8px 34px rgba(0,0,0,.4)}
-  #showHud{position:absolute;left:12px;top:10px;z-index:60;pointer-events:none;display:none;max-width:66%}
+  #showHud{position:absolute;left:12px;top:10px;z-index:60;pointer-events:none;display:none;max-width:82%}
   #showHud .hud-sel{font-weight:800;font-size:16px;color:#fff;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.7)}
   #showHud .hud-sub{font-size:12px;color:#d4dbe4;margin-top:1px;text-shadow:0 1px 4px rgba(0,0,0,.7)}
-  #showHud .hud-warns{margin-top:9px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
-  #showHud .hud-warn{font-size:12.5px;font-weight:600;color:#ffce73;background:rgba(18,21,26,.66);border:1px solid rgba(255,206,115,.4);border-radius:7px;padding:3px 9px}
+  #showHud .hud-warns{margin-top:11px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+  #showHud .hud-warn{font-size:19px;font-weight:800;color:#fff;background:rgba(201,40,28,.92);border:2px solid #ffd27a;border-radius:10px;padding:9px 16px;letter-spacing:.3px;text-shadow:0 1px 3px rgba(0,0,0,.55);box-shadow:0 5px 18px rgba(0,0,0,.5)}
   #showHud .hud-tog{margin-top:10px;display:flex;gap:7px;flex-wrap:wrap;pointer-events:auto}
   #showHud .hud-btn{pointer-events:auto;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:rgba(18,21,26,.72);color:#cdd5df}
   #showHud .hud-btn.on{background:var(--accent);border-color:var(--accent);color:#06243b}
@@ -199,7 +199,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v65</div>
+  <div id="setupVer">Red Planning Tool v67</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -248,7 +248,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v65</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v67</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -904,16 +904,19 @@ function buildInspector(o){
   const body=$('inspBody');let h='';
   if(o.type==='arrow'){
     const man=o.man||[];
+    const fname=((state.formations[o.formation]||{}).name||'').toUpperCase()||'formation';
     h+=`<div class="sub-h" style="margin-top:0;border-top:none;padding-top:0">Maneuvers — tap to chain (max 6)</div>`;
     h+=`<div class="seg" id="iTurn" style="margin-bottom:8px"><button data-d="-1">Turn left</button><button data-d="1">Turn right</button></div>`;
     h+=`<div class="preset" id="iMan">${MANEUVERS.map(m=>`<button data-m="${m}"${man.length>=6?' disabled style="opacity:.35"':''}>${m}</button>`).join('')}</div>`;
     h+=`<div class="chainsum"${man.length?'':' data-empty="1"'}>${man.length?man.map(s=>esc(s.kind)+(s.kind==='Continue'?'':' '+(s.dir>0?'R':'L'))).join('  →  '):'— no maneuvers yet —'}</div><div class="row"><button class="btn" id="manUndo"${man.length?'':' disabled style="opacity:.4"'}>Undo last</button><button class="btn danger" id="manClear"${man.length?'':' disabled style="opacity:.4"'}>Clear</button></div>`;
+    h+=`<button class="btn" id="manFormation" style="width:100%;margin-top:8px">Apply this maneuver to all ${esc(fname)} ▸</button>`;
     h+=`<p style="color:var(--muted);font-size:13px;margin:8px 0 0">Set left/right, then tap a maneuver. Continue extends straight one arrow-length. On the card, tap the jet or its faded end-arrow to add the next.</p>`;
     h+=`<div class="sub-h">Altitude</div>`;
     h+=fld('Thousands of feet','<input type="text" data-k="alt" placeholder="e.g. 22 or 22.5">');
     h+=`<div id="altNote" style="margin:-6px 0 10px;font-size:13px"></div>`;
     h+=`<button class="btn" id="pickAlt" style="width:100%;margin-bottom:10px">Choose from altitude blocks ▾</button>`;
     h+=`<div class="toggle"><span>Show altitude in arrow</span><div class="switch" data-toggle="showAlt"><i></i></div></div>`;
+    h+=`<button class="btn" id="altFormation" style="width:100%;margin-top:10px">Apply this altitude to all ${esc(fname)} ▸</button>`;
     h+=`<div class="sub-h">Callsign</div>`;
     h+=`<div class="field"><div class="ship-sel" id="iShip"><button data-n="0">—</button><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button></div></div>`;
     h+=fld('Label','<input type="text" maxlength="6" data-k="cs" style="text-transform:uppercase">');
@@ -958,6 +961,9 @@ function buildInspector(o){
     buildInspector(o);render();});
   const mu=body.querySelector('#manUndo');if(mu)mu.onclick=()=>{(o.man||[]).pop();buildInspector(o);render();};
   const mc=body.querySelector('#manClear');if(mc)mc.onclick=()=>{o.man=[];buildInspector(o);render();};
+  const fname2=((state.formations[o.formation]||{}).name||'').toUpperCase()||'formation';
+  const mf=body.querySelector('#manFormation');if(mf)mf.onclick=()=>{const cc=curCard();let cnt=0;(cc.objects||[]).forEach(x=>{if(x.type==='arrow'&&x.formation===o.formation&&x.id!==o.id){x.man=(o.man||[]).map(s=>({kind:s.kind,dir:s.dir}));cnt++;}});render();persist();flash(cnt?(((o.man||[]).length?'Copied maneuver':'Cleared maneuver')+' to '+cnt+' other '+fname2+' jet'+(cnt>1?'s':'')):('No other '+fname2+' jets in this presentation'));};
+  const af=body.querySelector('#altFormation');if(af)af.onclick=()=>{if(!o.alt){flash('Set this jet\u2019s altitude first');return;}const cc=curCard();let cnt=0;(cc.objects||[]).forEach(x=>{if(x.type==='arrow'&&x.formation===o.formation&&x.id!==o.id){x.alt=o.alt;x.showAlt=true;cnt++;}});render();persist();flash(cnt?('Copied '+fmtAlt(o.alt)+' to '+cnt+' other '+fname2+' jet'+(cnt>1?'s':'')):('No other '+fname2+' jets in this presentation'));};
   const dir=body.querySelector('#iDir');if(dir)[...dir.children].forEach(b=>{b.classList.toggle('sel',+b.dataset.ang===o.angle);b.onclick=()=>{o.angle=+b.dataset.ang;[...dir.children].forEach(x=>x.classList.toggle('sel',x===b));render();};});
   const orient=body.querySelector('#iOrient');if(orient)[...orient.children].forEach(b=>{b.classList.toggle('sel',b.dataset.or===o.orient);b.onclick=()=>{o.orient=b.dataset.or;[...orient.children].forEach(x=>x.classList.toggle('sel',x===b));render();};});
   const ik=body.querySelector('#iKind');if(ik)[...ik.children].forEach(b=>{b.classList.toggle('sel',(o.kind||'range')===b.dataset.kind);b.onclick=()=>{o.kind=b.dataset.kind;[...ik.children].forEach(x=>x.classList.toggle('sel',x===b));render();};});
@@ -1024,46 +1030,13 @@ function clearMission(){if(!confirm('Wipe this entire mission and start fresh? T
   state.objects=state.cards[0].objects;ensureScaleDefaults();
   loadCard(0);fitZoom();persist();flash('Mission cleared');openMaster();}
 $('masterClear').onclick=clearMission;
-function fEditRow(f,i){const wrap=document.createElement('div');
-  const row=document.createElement('div');row.className='fedit';row.style.marginBottom='5px';
+function fEditRow(f,i){const row=document.createElement('div');row.className='fedit';
   const sw=document.createElement('div');sw.className='sw';sw.style.background=f.color;
   const nm=document.createElement('input');nm.className='nm';nm.placeholder='CS';nm.maxLength=10;nm.value=f.name||'';nm.addEventListener('input',()=>{f.name=nm.value.toUpperCase();render();});
   const ships=document.createElement('div');ships.className='ships';
   for(let n=1;n<=4;n++){const b=document.createElement('button');b.textContent=n;if((f.ships||1)===n)b.classList.add('sel');b.onclick=()=>{f.ships=n;[...ships.children].forEach(x=>x.classList.toggle('sel',x===b));render();};ships.appendChild(b);}
   const rm=document.createElement('button');rm.className='rm';rm.textContent='✕';rm.onclick=()=>{if(state.formations.length<=1)return;state.formations.splice(i,1);state.formations.forEach((g,k)=>g.color=PALETTE[k]);if(state.active>=state.formations.length)state.active=0;render();refreshFEdits();};
-  row.append(sw,nm,ships,rm);wrap.appendChild(row);
-  const ar=document.createElement('div');ar.style.cssText='display:flex;align-items:center;gap:8px;margin:0 0 6px 39px';
-  const ai=document.createElement('input');ai.type='text';ai.placeholder='set all jets\u2019 alt, e.g. 20-24';ai.style.cssText='flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px 11px;font-size:14px';
-  const ab=document.createElement('button');ab.className='btn';ab.textContent='Set';ab.style.cssText='padding:9px 16px;flex:0 0 auto';
-  const apply=()=>{const v=ai.value.trim();if(!v)return;const card=curCard();let cnt=0;(card.objects||[]).forEach(o=>{if(o.type==='arrow'&&o.formation===i){o.alt=v;o.showAlt=true;cnt++;}});ai.value='';render();persist();flash(cnt?('Set '+cnt+' '+((f.name||'').toUpperCase()||'jet')+' jet'+(cnt>1?'s':'')+' to '+fmtAlt(v)):'No '+((f.name||'').toUpperCase()||'')+' jets in this presentation');};
-  ab.onclick=apply;ai.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();apply();}});
-  ar.append(ai,ab);wrap.appendChild(ar);
-  const mb=document.createElement('button');mb.className='btn';mb.textContent='Set formation maneuver \u2192';mb.style.cssText='margin:0 0 14px 39px;padding:9px 14px';mb.onclick=()=>openFormationManeuver(i);wrap.appendChild(mb);
-  return wrap;}
-function openFormationManeuver(fi){
-  const f=state.formations[fi]||{},name=(f.name||'').toUpperCase()||'formation';let chain=[],dir=state.turnDir||-1;
-  const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:18px';
-  const card=document.createElement('div');card.style.cssText='background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:430px;width:100%;padding:20px;max-height:92vh;overflow:auto';
-  card.innerHTML='<div style="font-size:17px;font-weight:800;color:var(--txt);margin-bottom:4px">Set maneuver \u2014 '+esc(name)+'</div><div style="font-size:13px;color:var(--muted);margin-bottom:14px">Build a chain; it copies onto every '+esc(name)+' jet in this presentation. Each jet flies it from its own position.</div>';
-  const seg=document.createElement('div');seg.className='seg';seg.style.marginBottom='8px';
-  const tl=document.createElement('button');tl.textContent='Turn left';const tr=document.createElement('button');tr.textContent='Turn right';
-  const setDir=()=>{tl.classList.toggle('sel',dir<0);tr.classList.toggle('sel',dir>0);};
-  tl.onclick=()=>{dir=-1;state.turnDir=-1;setDir();};tr.onclick=()=>{dir=1;state.turnDir=1;setDir();};setDir();seg.append(tl,tr);card.appendChild(seg);
-  const preset=document.createElement('div');preset.className='preset';
-  const sum=document.createElement('div');sum.className='chainsum';
-  const refresh=()=>{sum.textContent=chain.length?chain.map(s=>s.kind+(s.kind==='Continue'?'':' '+(s.dir>0?'R':'L'))).join('  \u2192  '):'\u2014 no maneuvers yet \u2014';if(chain.length)sum.removeAttribute('data-empty');else sum.setAttribute('data-empty','1');};
-  MANEUVERS.forEach(m=>{const b=document.createElement('button');b.textContent=m;b.onclick=()=>{if(chain.length>=6)return;chain.push({kind:m,dir});refresh();};preset.appendChild(b);});
-  card.appendChild(preset);card.appendChild(sum);
-  const row=document.createElement('div');row.className='row';
-  const undo=document.createElement('button');undo.className='btn';undo.textContent='Undo last';undo.onclick=()=>{chain.pop();refresh();};
-  const clr=document.createElement('button');clr.className='btn danger';clr.textContent='Clear';clr.onclick=()=>{chain=[];refresh();};
-  row.append(undo,clr);card.appendChild(row);refresh();
-  const arow=document.createElement('div');arow.className='row';arow.style.marginTop='14px';
-  const cancel=document.createElement('button');cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=()=>ov.remove();
-  const ap=document.createElement('button');ap.className='btn primary';ap.textContent='Apply to all';
-  ap.onclick=()=>{const cc=curCard();let cnt=0;(cc.objects||[]).forEach(o=>{if(o.type==='arrow'&&o.formation===fi){o.man=chain.map(s=>({kind:s.kind,dir:s.dir}));cnt++;}});render();persist();ov.remove();flash(cnt?((chain.length?'Set':'Cleared')+' '+cnt+' '+name+' jet'+(cnt>1?'s':'')+'\u2019 maneuver'):'No '+name+' jets in this presentation');};
-  arow.append(cancel,ap);card.appendChild(arow);
-  ov.appendChild(card);document.body.appendChild(ov);}
+  row.append(sw,nm,ships,rm);return row;}
 
 /* ============ VIEW: zoom + pan + pinch ============ */
 function applyTransform(){scene.style.transform=`translate(${state.tx}px,${state.ty}px) scale(${state.zoom})`;$('zVal').textContent=Math.round(state.zoom*100)+'%';}
