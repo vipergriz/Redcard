@@ -195,7 +195,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v50</div>
+  <div id="setupVer">Red Planning Tool v51</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -244,7 +244,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v50</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v51</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -678,7 +678,7 @@ function addGroupAlts(inner,spec){
   for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){if(arr[i].o.formation!==arr[j].o.formation)continue;
     if(Math.hypot(arr[i].tip.x-arr[j].tip.x,arr[i].tip.y-arr[j].tip.y)<=R)par[find(i)]=find(j);}
   const groups=new Map();for(let i=0;i<n;i++){const g=find(i);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(arr[i]);}
-  const fs=Math.round(th*1.3),gap=Math.round(fs*0.75);
+  const fs=Math.round(th*0.65),gap=Math.round(fs*0.75);
   groups.forEach(members=>{
     let lo=Infinity,hi=-Infinity;
     for(const m of members){const lv=altLevels(m.o.alt);if(lv.length){lo=Math.min(lo,lv[0]);hi=Math.max(hi,lv[lv.length-1]);}}
