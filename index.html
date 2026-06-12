@@ -199,7 +199,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v57</div>
+  <div id="setupVer">Red Planning Tool v60</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -248,7 +248,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v57</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v60</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -540,7 +540,7 @@ function buildGhost(jet,end,head){
 }
 function buildText(o){const d=document.createElement('div');d.className='txt'+(o.boxed?' boxed':'');d.textContent=o.text;d.style.fontSize=o.size+'px';d.style.fontWeight=o.bold?'800':'400';d.style.fontStyle=o.italic?'italic':'normal';d.style.color=o.color||'#000';return d;}
 function buildBracket(o){const nm=(o.nm!=null?o.nm:(parseFloat(o.label)||10));const w=Math.max(24,Math.round(nm*ppnm()));const MS=modeScale();
-  const sw=(3.5*MS).toFixed(1),tick=Math.round(16*MS),svh=Math.round(26*MS),fnt=Math.round(22*MS),lbl=String(nm);
+  const sw=(3.5*MS*(lmode()===2?1:1.3)).toFixed(1),tick=Math.round(16*MS),svh=Math.round(26*MS),fnt=Math.round(22*MS*(lmode()===2?1.75:3)),lbl=String(nm);
   const arrowsH=(state.defaultAngle===0||state.defaultAngle===180);const horiz=(o.kind==='azimuth')?!arrowsH:arrowsH;
   const wrap=document.createElement('div');wrap.className='bracket';
   if(horiz){const ticksDown=(o.y+svh/2)<H/2;
@@ -1017,13 +1017,46 @@ function clearMission(){if(!confirm('Wipe this entire mission and start fresh? T
   state.objects=state.cards[0].objects;ensureScaleDefaults();
   loadCard(0);fitZoom();persist();flash('Mission cleared');openMaster();}
 $('masterClear').onclick=clearMission;
-function fEditRow(f,i){const row=document.createElement('div');row.className='fedit';
+function fEditRow(f,i){const wrap=document.createElement('div');
+  const row=document.createElement('div');row.className='fedit';row.style.marginBottom='5px';
   const sw=document.createElement('div');sw.className='sw';sw.style.background=f.color;
   const nm=document.createElement('input');nm.className='nm';nm.placeholder='CS';nm.maxLength=10;nm.value=f.name||'';nm.addEventListener('input',()=>{f.name=nm.value.toUpperCase();render();});
   const ships=document.createElement('div');ships.className='ships';
   for(let n=1;n<=4;n++){const b=document.createElement('button');b.textContent=n;if((f.ships||1)===n)b.classList.add('sel');b.onclick=()=>{f.ships=n;[...ships.children].forEach(x=>x.classList.toggle('sel',x===b));render();};ships.appendChild(b);}
   const rm=document.createElement('button');rm.className='rm';rm.textContent='✕';rm.onclick=()=>{if(state.formations.length<=1)return;state.formations.splice(i,1);state.formations.forEach((g,k)=>g.color=PALETTE[k]);if(state.active>=state.formations.length)state.active=0;render();refreshFEdits();};
-  row.append(sw,nm,ships,rm);return row;}
+  row.append(sw,nm,ships,rm);wrap.appendChild(row);
+  const ar=document.createElement('div');ar.style.cssText='display:flex;align-items:center;gap:8px;margin:0 0 6px 39px';
+  const ai=document.createElement('input');ai.type='text';ai.placeholder='set all jets\u2019 alt, e.g. 20-24';ai.style.cssText='flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px 11px;font-size:14px';
+  const ab=document.createElement('button');ab.className='btn';ab.textContent='Set';ab.style.cssText='padding:9px 16px;flex:0 0 auto';
+  const apply=()=>{const v=ai.value.trim();if(!v)return;const card=curCard();let cnt=0;(card.objects||[]).forEach(o=>{if(o.type==='arrow'&&o.formation===i){o.alt=v;o.showAlt=true;cnt++;}});ai.value='';render();persist();flash(cnt?('Set '+cnt+' '+((f.name||'').toUpperCase()||'jet')+' jet'+(cnt>1?'s':'')+' to '+fmtAlt(v)):'No '+((f.name||'').toUpperCase()||'')+' jets in this presentation');};
+  ab.onclick=apply;ai.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();apply();}});
+  ar.append(ai,ab);wrap.appendChild(ar);
+  const mb=document.createElement('button');mb.className='btn';mb.textContent='Set formation maneuver \u2192';mb.style.cssText='margin:0 0 14px 39px;padding:9px 14px';mb.onclick=()=>openFormationManeuver(i);wrap.appendChild(mb);
+  return wrap;}
+function openFormationManeuver(fi){
+  const f=state.formations[fi]||{},name=(f.name||'').toUpperCase()||'formation';let chain=[],dir=state.turnDir||-1;
+  const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:18px';
+  const card=document.createElement('div');card.style.cssText='background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:430px;width:100%;padding:20px;max-height:92vh;overflow:auto';
+  card.innerHTML='<div style="font-size:17px;font-weight:800;color:var(--txt);margin-bottom:4px">Set maneuver \u2014 '+esc(name)+'</div><div style="font-size:13px;color:var(--muted);margin-bottom:14px">Build a chain; it copies onto every '+esc(name)+' jet in this presentation. Each jet flies it from its own position.</div>';
+  const seg=document.createElement('div');seg.className='seg';seg.style.marginBottom='8px';
+  const tl=document.createElement('button');tl.textContent='Turn left';const tr=document.createElement('button');tr.textContent='Turn right';
+  const setDir=()=>{tl.classList.toggle('sel',dir<0);tr.classList.toggle('sel',dir>0);};
+  tl.onclick=()=>{dir=-1;state.turnDir=-1;setDir();};tr.onclick=()=>{dir=1;state.turnDir=1;setDir();};setDir();seg.append(tl,tr);card.appendChild(seg);
+  const preset=document.createElement('div');preset.className='preset';
+  const sum=document.createElement('div');sum.className='chainsum';
+  const refresh=()=>{sum.textContent=chain.length?chain.map(s=>s.kind+(s.kind==='Continue'?'':' '+(s.dir>0?'R':'L'))).join('  \u2192  '):'\u2014 no maneuvers yet \u2014';if(chain.length)sum.removeAttribute('data-empty');else sum.setAttribute('data-empty','1');};
+  MANEUVERS.forEach(m=>{const b=document.createElement('button');b.textContent=m;b.onclick=()=>{if(chain.length>=6)return;chain.push({kind:m,dir});refresh();};preset.appendChild(b);});
+  card.appendChild(preset);card.appendChild(sum);
+  const row=document.createElement('div');row.className='row';
+  const undo=document.createElement('button');undo.className='btn';undo.textContent='Undo last';undo.onclick=()=>{chain.pop();refresh();};
+  const clr=document.createElement('button');clr.className='btn danger';clr.textContent='Clear';clr.onclick=()=>{chain=[];refresh();};
+  row.append(undo,clr);card.appendChild(row);refresh();
+  const arow=document.createElement('div');arow.className='row';arow.style.marginTop='14px';
+  const cancel=document.createElement('button');cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=()=>ov.remove();
+  const ap=document.createElement('button');ap.className='btn primary';ap.textContent='Apply to all';
+  ap.onclick=()=>{const cc=curCard();let cnt=0;(cc.objects||[]).forEach(o=>{if(o.type==='arrow'&&o.formation===fi){o.man=chain.map(s=>({kind:s.kind,dir:s.dir}));cnt++;}});render();persist();ov.remove();flash(cnt?((chain.length?'Set':'Cleared')+' '+cnt+' '+name+' jet'+(cnt>1?'s':'')+'\u2019 maneuver'):'No '+name+' jets in this presentation');};
+  arow.append(cancel,ap);card.appendChild(arow);
+  ov.appendChild(card);document.body.appendChild(ov);}
 
 /* ============ VIEW: zoom + pan + pinch ============ */
 function applyTransform(){scene.style.transform=`translate(${state.tx}px,${state.ty}px) scale(${state.zoom})`;$('zVal').textContent=Math.round(state.zoom*100)+'%';}
