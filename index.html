@@ -186,9 +186,9 @@
 
   @media print{
     @page{size:letter landscape;margin:0}
-    html,body{overflow:visible;background:#fff;height:auto;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    html,body{width:1056px !important;min-width:1056px !important;max-width:1056px !important;overflow:visible;background:#fff;height:auto;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     #app,.sheet,#backdrop,#setup,.preview-bar{display:none !important}
-    #printSheet,#printSheet.preview{display:block !important;position:static !important;inset:auto !important;overflow:visible !important;padding:0 !important;background:#fff !important;transform:none !important}
+    #printSheet,#printSheet.preview{display:block !important;position:static !important;inset:auto !important;width:1056px !important;margin:0 !important;overflow:visible !important;padding:0 !important;background:#fff !important;transform:none !important}
     .pageholder{display:block !important;width:auto !important;height:auto !important;margin:0 !important;box-shadow:none !important;transform:none !important}
     .print-page{transform:none !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .pbox,.pbox *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -199,7 +199,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v77</div>
+  <div id="setupVer">Red Planning Tool v80</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -248,7 +248,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v77</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v80</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -278,6 +278,7 @@
       <button class="btn" data-add="redpt">◆ Red Point</button>
       <button class="btn" data-add="legend">Legend table</button>
     </div>
+    <button class="btn ghost" id="pictureBtn" style="width:100%;margin-top:10px;font-weight:700">🖼 PICTURE — auto-build formations</button>
     <button class="btn ghost" id="editFormBtn" style="width:100%;margin-top:10px;color:var(--accent)">Edit formations</button>
   </div>
 </div>
@@ -654,7 +655,7 @@ function lastSegTrail(inner,jet,n){const segs=chainGeom(jet);if(!segs.length)ret
   let d='';for(let i=start;i<segs.length;i++){const s=segs[i];d+='M'+s.pts[0].x.toFixed(1)+' '+s.pts[0].y.toFixed(1);for(let j=1;j<s.pts.length;j++)d+=' L'+s.pts[j].x.toFixed(1)+' '+s.pts[j].y.toFixed(1);}
   const path=document.createElementNS(NS,'path');path.setAttribute('d',d);path.setAttribute('fill','none');path.setAttribute('stroke',col);path.setAttribute('stroke-width',th);path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);
   inner.appendChild(svg);}
-function bracketShows(o,t){const res=(o.phase==='resolved');if(t==='resolved'||t==='origin'||t==='origin2')return res;if(t==='step')return false;if(t==='combined'&&printMode&&lmode()!==1)return false;return !res;}
+function bracketShows(o,t){const res=(o.phase==='resolved');if(t==='resolved'||t==='origin'||t==='origin2')return res;if(t==='step')return lmode()===1?!res:false;if(t==='combined'&&printMode&&lmode()!==1)return false;return !res;}
 function presLegend(objs){const map=new Map();
   for(const o of objs){if(o.type!=='arrow')continue;const cs=(o.cs||'').toUpperCase()||'—';if(!map.has(cs))map.set(cs,{cs,color:(state.formations[o.formation]||{}).color||'#888',fi:(o.formation==null?99:o.formation),ship:(o.ship||0),alts:new Set(),blue:false});const e=map.get(cs);if(o.showAlt&&o.alt){e.alts.add(fmtAlt(o.alt));if(isBlueAlt(o.alt))e.blue=true;}}
   return [...map.values()].sort((a,b)=>a.fi-b.fi||a.ship-b.ship).map(e=>({cs:e.cs,color:e.color,alt:[...e.alts].join(', '),blue:e.blue}));}
@@ -817,6 +818,58 @@ function nextFighter(){const sel=getSel();let fi,numbered;
   state.objects.push(o);selectOnly(o.id);}
 function deleteSel(){if(!state.selected)return;const i=state.objects.findIndex(o=>o.id===state.selected);if(i>=0)state.objects.splice(i,1);state.selected=null;render();updateActions();closeSheets();}
 
+const PICTURES={
+  wall:{groups:3,label:'WALL',sub:'3 group',pos:[[0,-0.5],[0,0],[0,0.5]]},
+  box:{groups:4,label:'BOX',sub:'4 group',pos:[[0.5,-0.5],[0.5,0.5],[-0.5,-0.5],[-0.5,0.5]]},
+  champagne:{groups:3,label:'CHAMPAGNE',sub:'3 group',pos:[[0.5,-0.5],[0.5,0.5],[-0.5,0]]},
+  vic:{groups:3,label:'VIC',sub:'3 group',pos:[[0.5,0],[-0.5,-0.5],[-0.5,0.5]]}
+};
+function applyPicture(key,range,azimuth){
+  const pic=PICTURES[key];if(!pic)return;const F=state.formations.length;if(!F){flash('No formations to place');return;}
+  // deconflicted red altitude blocks: thickness >= ships (min 2) thousands, 1k gap
+  const bands={};let base=20;state.formations.forEach((f,fi)=>{const thk=Math.max(2,shipsOf(fi));bands[fi]=base+'-'+(base+thk);base=base+thk+1;});
+  // assign formations to groups (round-robin → extras double up in one big group)
+  const G=pic.groups,groupForms=Array.from({length:G},()=>[]);
+  state.formations.forEach((f,fi)=>{groupForms[fi%G].push(fi);});
+  // clear existing arrows + scale bars on this presentation
+  for(let i=state.objects.length-1;i>=0;i--){const t=state.objects[i].type;if(t==='arrow'||t==='bracket')state.objects.splice(i,1);}
+  const fwd=ur(state.defaultAngle),cross={x:-fwd.y,y:fwd.x},cx=W/2,cy=H/2,PN=ppnm(),D=1.5*arrowGeo().th;
+  groupForms.forEach((fis,g)=>{if(!fis.length)return;const[alongF,crossF]=pic.pos[g];
+    const gpx=cx+fwd.x*(alongF*range*PN)+cross.x*(crossF*azimuth*PN),gpy=cy+fwd.y*(alongF*range*PN)+cross.y*(crossF*azimuth*PN);
+    const ships=[];fis.forEach(fi=>{for(let s=0;s<shipsOf(fi);s++)ships.push(fi);});const T=ships.length;
+    ships.forEach((fi,k)=>{const off=(k-(T-1)/2)*D,x=Math.round(gpx+cross.x*off),y=Math.round(gpy+cross.y*off);
+      state.objects.push({id:nid(),type:'arrow',x,y,formation:fi,ship:0,cs:csFor(fi,0),alt:bands[fi],showAlt:true,len:330,th:102,angle:state.defaultAngle,man:[],maneuver:'',ea:false,pk:false,fontSize:47});});});
+  // range + azimuth scale bars
+  const arrowsH=(state.defaultAngle===0||state.defaultAngle===180);
+  const placeBar=(kind,nm)=>{const horiz=(kind==='azimuth')?!arrowsH:arrowsH,len=nm*PN;let x,y;
+    if(horiz){x=Math.round((W-len)/2);y=Math.round(H*0.82);}else{x=Math.round(W*0.82);y=Math.round((H-len)/2);}
+    state.objects.push({id:nid(),type:'bracket',kind,phase:'push',nm,x,y});};
+  placeBar('range',range);placeBar('azimuth',azimuth);
+  state.selected=null;render();persist();fitZoom();
+  flash(pic.label+' built — '+F+' formation'+(F>1?'s':'')+' placed');
+}
+function openPictureTool(){
+  let sel=null;
+  const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:18px';
+  const card=document.createElement('div');card.style.cssText='background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:460px;width:100%;padding:20px;max-height:94vh;overflow:auto';
+  card.innerHTML='<div style="font-size:17px;font-weight:800;color:var(--txt);margin-bottom:4px">Auto-build a picture</div><div style="font-size:13px;color:var(--muted);margin-bottom:14px">Places every formation as un-numbered “–” groups with deconflicted altitude blocks. Replaces the arrows &amp; scale bars in this presentation — edit freely after.</div>';
+  const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px';
+  const btns={};
+  Object.keys(PICTURES).forEach(k=>{const p=PICTURES[k];const b=document.createElement('button');b.className='btn';b.style.cssText='display:flex;flex-direction:column;gap:2px;padding:13px';b.innerHTML='<div style="font-weight:800;font-size:15px">'+p.label+'</div><div style="font-size:12px;color:var(--muted)">'+p.sub+'</div>';b.onclick=()=>{sel=k;Object.values(btns).forEach(x=>x.classList.remove('primary'));b.classList.add('primary');};btns[k]=b;grid.appendChild(b);});
+  card.appendChild(grid);
+  const mk=(lab,val)=>{const w=document.createElement('div');const l=document.createElement('div');l.textContent=lab;l.style.cssText='font-size:12px;color:var(--muted);margin-bottom:4px';const i=document.createElement('input');i.type='text';i.inputMode='decimal';i.value=val;i.style.cssText='width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:10px 12px;font-size:15px;text-align:center';i.addEventListener('input',()=>{i.value=i.value.replace(/[^0-9.]/g,'');});w.append(l,i);return {w,i};};
+  const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px';
+  const rf=mk('Range — NM (fore↔aft)','10'),af=mk('Azimuth — NM (width)','15');
+  row.append(rf.w,af.w);card.appendChild(row);
+  const hint=document.createElement('div');hint.style.cssText='font-size:12px;color:var(--muted);margin-bottom:14px';hint.textContent='Range = farthest-forward to farthest-aft. Azimuth = total width. Both scale bars are added.';card.appendChild(hint);
+  const ctr=document.createElement('div');ctr.style.cssText='display:flex;gap:10px';
+  const cancel=document.createElement('button');cancel.className='btn';cancel.style.flex='0 0 auto';cancel.textContent='Cancel';cancel.onclick=()=>ov.remove();
+  const apply=document.createElement('button');apply.className='btn primary';apply.style.flex='1';apply.textContent='Build picture';
+  apply.onclick=()=>{if(!sel){flash('Pick a picture first');return;}const range=parseFloat(rf.i.value)||0,azimuth=parseFloat(af.i.value)||0;if(range<=0||azimuth<=0){flash('Enter range and azimuth');return;}ov.remove();applyPicture(sel,range,azimuth);};
+  ctr.append(cancel,apply);card.appendChild(ctr);
+  ov.appendChild(card);document.body.appendChild(ov);
+}
+
 /* ============ SHEETS ============ */
 let sheetCloseHook=null;
 function openSheet(id){sheetCloseHook=null;closeSheets();$(id).classList.add('open');$('backdrop').classList.add('show');}
@@ -828,6 +881,7 @@ $('toolsTopBtn').addEventListener('click',()=>{renderActiveChips();openSheet('to
 $('menuBtn').addEventListener('click',openMenu);
 $('cardTitleBtn').addEventListener('click',()=>{openMenu();setTimeout(()=>$('menuTitle').focus(),250);});
 document.querySelectorAll('#toolSheet [data-add]').forEach(b=>b.addEventListener('click',()=>addObject(b.dataset.add)));
+$('pictureBtn').addEventListener('click',()=>{closeSheets();openPictureTool();});
 $('editFormBtn').addEventListener('click',openMenu);
 $('altBlocksBtn').addEventListener('click',openAltEditor);
 
