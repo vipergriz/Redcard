@@ -181,11 +181,12 @@
   .perseg button{width:30px;height:30px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-weight:700;font-size:13px}
   .perseg button.on{background:var(--accent);border-color:var(--accent);color:#06243b}
   .pbox{position:relative;border:1px solid #111;border-radius:6px;overflow:hidden;background:#fff}
-  .print-page{position:relative;width:1056px;height:816px;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
+  .print-page{position:relative;width:1056px;height:816px;background:#fff;overflow:hidden}
+  .print-page:not(:last-child){page-break-after:always;break-after:page}
   .print-page:last-child{page-break-after:auto;break-after:auto}
 
   @media print{
-    @page{size:letter landscape;margin:0}
+    @page{size:11in 8.5in;margin:0}
     html,body{width:1056px !important;min-width:1056px !important;max-width:1056px !important;overflow:visible;background:#fff;height:auto;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     #app,.sheet,#backdrop,#setup,.preview-bar{display:none !important}
     #printSheet,#printSheet.preview{display:block !important;position:static !important;inset:auto !important;width:1056px !important;margin:0 !important;overflow:visible !important;padding:0 !important;background:#fff !important;transform:none !important}
@@ -199,7 +200,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v80</div>
+  <div id="setupVer">Red Planning Tool v82</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -248,7 +249,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v80</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v82</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -824,27 +825,39 @@ const PICTURES={
   champagne:{groups:3,label:'CHAMPAGNE',sub:'3 group',pos:[[0.5,-0.5],[0.5,0.5],[-0.5,0]]},
   vic:{groups:3,label:'VIC',sub:'3 group',pos:[[0.5,0],[-0.5,-0.5],[-0.5,0.5]]}
 };
+function pickAltBlock(thk,red,used){
+  const bands=[30,20,40,10];
+  const scan=(needRed)=>{
+    for(const band of bands){for(let lo=band;lo<=band+(9-thk);lo++){let ok=true;for(let l=lo;l<=lo+thk;l++){if(used.has(l)||(needRed&&!red.has(l))){ok=false;break;}}if(ok)return {lo,hi:lo+thk};}}
+    for(let lo=10;lo+thk<=50;lo++){let ok=true;for(let l=lo;l<=lo+thk;l++){if(used.has(l)||(needRed&&!red.has(l))){ok=false;break;}}if(ok)return {lo,hi:lo+thk};}
+    return null;};
+  return scan(true)||scan(false);
+}
 function applyPicture(key,range,azimuth){
   const pic=PICTURES[key];if(!pic)return;const F=state.formations.length;if(!F){flash('No formations to place');return;}
-  // deconflicted red altitude blocks: thickness >= ships (min 2) thousands, 1k gap
-  const bands={};let base=20;state.formations.forEach((f,fi)=>{const thk=Math.max(2,shipsOf(fi));bands[fi]=base+'-'+(base+thk);base=base+thk+1;});
-  // assign formations to groups (round-robin → extras double up in one big group)
+  const isWall=(key==='wall');
+  // altitude blocks: prefer red air, priority 30k→20k→40k→10k, deconflicted (≥ships thousands, min 2)
+  const red=new Set(state.redAlts||[]),used=new Set(),bands={};
+  state.formations.forEach((f,fi)=>{const thk=Math.max(2,shipsOf(fi));const blk=pickAltBlock(thk,red,used);if(blk){for(let l=blk.lo;l<=blk.hi;l++)used.add(l);bands[fi]=blk.lo+'-'+blk.hi;}else bands[fi]='';});
+  // assign formations to groups (round-robin → extras double up into one big group)
   const G=pic.groups,groupForms=Array.from({length:G},()=>[]);
   state.formations.forEach((f,fi)=>{groupForms[fi%G].push(fi);});
-  // clear existing arrows + scale bars on this presentation
   for(let i=state.objects.length-1;i>=0;i--){const t=state.objects[i].type;if(t==='arrow'||t==='bracket')state.objects.splice(i,1);}
-  const fwd=ur(state.defaultAngle),cross={x:-fwd.y,y:fwd.x},cx=W/2,cy=H/2,PN=ppnm(),D=1.5*arrowGeo().th;
+  const fwd=ur(state.defaultAngle),cross={x:-fwd.y,y:fwd.x},cx=W/2,cy=H/2,PN=ppnm();
+  const TH=arrowGeo().th,LEN=arrowGeo().len,D=TH;            // tight: ship centers a full width apart → edges touch
+  const azW=azimuth*PN,rangeW=range*PN,alongHalf=Math.max(0,(rangeW-LEN)/2);
   groupForms.forEach((fis,g)=>{if(!fis.length)return;const[alongF,crossF]=pic.pos[g];
-    const gpx=cx+fwd.x*(alongF*range*PN)+cross.x*(crossF*azimuth*PN),gpy=cy+fwd.y*(alongF*range*PN)+cross.y*(crossF*azimuth*PN);
-    const ships=[];fis.forEach(fi=>{for(let s=0;s<shipsOf(fi);s++)ships.push(fi);});const T=ships.length;
+    const ships=[];fis.forEach(fi=>{for(let s=0;s<shipsOf(fi);s++)ships.push(fi);});const T=ships.length,halfW=T*TH/2;
+    const crossPx=crossF<0?(-azW/2+halfW):crossF>0?(azW/2-halfW):0;
+    const alongPx=isWall?0:(alongF>0?alongHalf:alongF<0?-alongHalf:0);
+    const gpx=cx+fwd.x*alongPx+cross.x*crossPx,gpy=cy+fwd.y*alongPx+cross.y*crossPx;
     ships.forEach((fi,k)=>{const off=(k-(T-1)/2)*D,x=Math.round(gpx+cross.x*off),y=Math.round(gpy+cross.y*off);
       state.objects.push({id:nid(),type:'arrow',x,y,formation:fi,ship:0,cs:csFor(fi,0),alt:bands[fi],showAlt:true,len:330,th:102,angle:state.defaultAngle,man:[],maneuver:'',ea:false,pk:false,fontSize:47});});});
-  // range + azimuth scale bars
   const arrowsH=(state.defaultAngle===0||state.defaultAngle===180);
   const placeBar=(kind,nm)=>{const horiz=(kind==='azimuth')?!arrowsH:arrowsH,len=nm*PN;let x,y;
     if(horiz){x=Math.round((W-len)/2);y=Math.round(H*0.82);}else{x=Math.round(W*0.82);y=Math.round((H-len)/2);}
     state.objects.push({id:nid(),type:'bracket',kind,phase:'push',nm,x,y});};
-  placeBar('range',range);placeBar('azimuth',azimuth);
+  if(!isWall)placeBar('range',range);placeBar('azimuth',azimuth);
   state.selected=null;render();persist();fitZoom();
   flash(pic.label+' built — '+F+' formation'+(F>1?'s':'')+' placed');
 }
@@ -855,7 +868,7 @@ function openPictureTool(){
   card.innerHTML='<div style="font-size:17px;font-weight:800;color:var(--txt);margin-bottom:4px">Auto-build a picture</div><div style="font-size:13px;color:var(--muted);margin-bottom:14px">Places every formation as un-numbered “–” groups with deconflicted altitude blocks. Replaces the arrows &amp; scale bars in this presentation — edit freely after.</div>';
   const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px';
   const btns={};
-  Object.keys(PICTURES).forEach(k=>{const p=PICTURES[k];const b=document.createElement('button');b.className='btn';b.style.cssText='display:flex;flex-direction:column;gap:2px;padding:13px';b.innerHTML='<div style="font-weight:800;font-size:15px">'+p.label+'</div><div style="font-size:12px;color:var(--muted)">'+p.sub+'</div>';b.onclick=()=>{sel=k;Object.values(btns).forEach(x=>x.classList.remove('primary'));b.classList.add('primary');};btns[k]=b;grid.appendChild(b);});
+  Object.keys(PICTURES).forEach(k=>{const p=PICTURES[k];const b=document.createElement('button');b.className='btn';b.style.cssText='display:flex;flex-direction:column;gap:2px;padding:13px';b.innerHTML='<div style="font-weight:800;font-size:15px">'+p.label+'</div><div style="font-size:12px;color:var(--muted)">'+p.sub+'</div>';b.onclick=()=>{sel=k;Object.values(btns).forEach(x=>x.classList.remove('primary'));b.classList.add('primary');const w=(k==='wall');rf.w.style.display=w?'none':'';row.style.gridTemplateColumns=w?'1fr':'1fr 1fr';hint.textContent=w?'A wall is line-abreast — no range. Azimuth = total width.':'Range = farthest-forward to farthest-aft. Azimuth = total width. Both scale bars are added.';};btns[k]=b;grid.appendChild(b);});
   card.appendChild(grid);
   const mk=(lab,val)=>{const w=document.createElement('div');const l=document.createElement('div');l.textContent=lab;l.style.cssText='font-size:12px;color:var(--muted);margin-bottom:4px';const i=document.createElement('input');i.type='text';i.inputMode='decimal';i.value=val;i.style.cssText='width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:10px 12px;font-size:15px;text-align:center';i.addEventListener('input',()=>{i.value=i.value.replace(/[^0-9.]/g,'');});w.append(l,i);return {w,i};};
   const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px';
@@ -865,7 +878,7 @@ function openPictureTool(){
   const ctr=document.createElement('div');ctr.style.cssText='display:flex;gap:10px';
   const cancel=document.createElement('button');cancel.className='btn';cancel.style.flex='0 0 auto';cancel.textContent='Cancel';cancel.onclick=()=>ov.remove();
   const apply=document.createElement('button');apply.className='btn primary';apply.style.flex='1';apply.textContent='Build picture';
-  apply.onclick=()=>{if(!sel){flash('Pick a picture first');return;}const range=parseFloat(rf.i.value)||0,azimuth=parseFloat(af.i.value)||0;if(range<=0||azimuth<=0){flash('Enter range and azimuth');return;}ov.remove();applyPicture(sel,range,azimuth);};
+  apply.onclick=()=>{if(!sel){flash('Pick a picture first');return;}const azimuth=parseFloat(af.i.value)||0,range=(sel==='wall')?0:(parseFloat(rf.i.value)||0);if(azimuth<=0){flash('Enter azimuth');return;}if(sel!=='wall'&&range<=0){flash('Enter range');return;}ov.remove();applyPicture(sel,range,azimuth);};
   ctr.append(cancel,apply);card.appendChild(ctr);
   ov.appendChild(card);document.body.appendChild(ov);
 }
@@ -1355,7 +1368,7 @@ function leftBriefHTML(){
 }
 function notesData(side){return side==='left'?(state.notesLeft||(state.notesLeft={items:[]})):(state.notesRight||(state.notesRight={items:[]}));}
 function notesActive(side){const d=notesData(side);return !!(d&&d.items&&d.items.some(it=>(it.text||'').trim()!==''));}
-function notesBoxDims(side){const SW=1008,SH=766,HALF=SW/2,PAD=24,RPAD=6,notesH=Math.round(SH*0.33);
+function notesBoxDims(side){const SW=1032,SH=792,HALF=SW/2,PAD=12,RPAD=6,notesH=Math.round(SH*0.33);
   if(side==='left')return {w:HALF-80,h:notesH};const rx=HALF+24,rw=(SW+PAD-RPAD)-rx;return {w:rw,h:notesH};}
 function buildNotesBox(side,x,y,w,h){
   const data=notesData(side),HDR=22;
@@ -1396,7 +1409,7 @@ function openNotesEditor(side){
   ctr.append(add,done);card.appendChild(ctr);
   ov.appendChild(card);document.body.appendChild(ov);}
 function buildPageFor(group){
-  const SW=1008,SH=766,HALF=SW/2,PAD=24;
+  const SW=1032,SH=792,HALF=SW/2,PAD=12;
   const page=document.createElement('div');page.className='print-page';page.style.width=(SW+2*PAD)+'px';page.style.height=(SH+2*PAD)+'px';
   const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';page.appendChild(content);
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';content.appendChild(fold);
