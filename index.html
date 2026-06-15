@@ -200,7 +200,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v82</div>
+  <div id="setupVer">Red Planning Tool v83</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -249,7 +249,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v82</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v83</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -1408,10 +1408,12 @@ function openNotesEditor(side){
   const done=document.createElement('button');done.className='btn';done.style.flex='0 0 auto';done.textContent='Done';done.onclick=()=>{ov.remove();if($('masterBrief'))renderMasterBrief();};
   ctr.append(add,done);card.appendChild(ctr);
   ov.appendChild(card);document.body.appendChild(ov);}
+const PRINT_FIT=0.89; // shrink so the card clears iOS Safari's forced margins + header/footer and stays on ONE landscape page
 function buildPageFor(group){
-  const SW=1032,SH=792,HALF=SW/2,PAD=12;
-  const page=document.createElement('div');page.className='print-page';page.style.width=(SW+2*PAD)+'px';page.style.height=(SH+2*PAD)+'px';
-  const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';page.appendChild(content);
+  const SW=1032,SH=792,HALF=SW/2,PAD=12,PW=SW+2*PAD,FULLH=SH+2*PAD,S=PRINT_FIT;
+  const page=document.createElement('div');page.className='print-page';page.style.width=PW+'px';page.style.height=Math.round(FULLH*S)+'px';
+  const scaler=document.createElement('div');scaler.style.cssText='position:absolute;left:'+Math.round((PW-PW*S)/2)+'px;top:0;width:'+PW+'px;height:'+FULLH+'px;transform:scale('+S+');transform-origin:top left';page.appendChild(scaler);
+  const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';scaler.appendChild(content);
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';content.appendChild(fold);
   const notesH=Math.round(SH*0.33),lNotes=notesActive('left'),rNotes=notesActive('right'),notesY=SH-notesH;
   const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+(lNotes?(notesY-12):SH)+'px;padding:46px 40px;box-sizing:border-box;overflow:hidden';
@@ -1428,7 +1430,7 @@ function buildPageFor(group){
 }
 function buildPages(scaled){
   const sheet=$('printSheet');sheet.innerHTML='';
-  const PW=1056,PH=816;
+  const PW=1056,PH=Math.round(816*PRINT_FIT);
   const pv=scaled?Math.min(1,(window.innerWidth-24)/PW):1;
   const m=lmode(),per=m===1?6:2;
   for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);const page=buildPageFor(group);
