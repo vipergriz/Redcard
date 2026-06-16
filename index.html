@@ -200,7 +200,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v84</div>
+  <div id="setupVer">Red Planning Tool v85</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -249,7 +249,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v84</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v85</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -493,6 +493,18 @@ function ensureScaleDefaults(){const objs=state.objects||[];if(objs.some(o=>o.ty
     objs.push({id:nid(),type:'bracket',kind,phase:'push',nm,x,y});};
   place('range');place('azimuth');}
 function arrowFitLen(o){return arrowGeo().len;}
+function drawShipNum(svg,len,th,angle,ship,fillCol,dark){
+  // position number centered in the arrowHEAD, upright, largest contrasting digit that fits
+  const ah=Math.min(th*0.95,len*0.42);
+  const tx=len-ah*0.58, ty=th/2, fs=Math.max(8,Math.round(th*0.74));
+  const t=document.createElementNS(NS,'text');
+  t.setAttribute('x',tx.toFixed(1));t.setAttribute('y',ty.toFixed(1));
+  t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','central');
+  t.setAttribute('font-size',fs);t.setAttribute('font-weight','900');t.setAttribute('font-family','Arial,Helvetica,sans-serif');
+  t.setAttribute('fill',dark?'#111':textColorFor(fillCol));
+  t.setAttribute('transform','rotate('+(-angle).toFixed(1)+' '+tx.toFixed(1)+' '+ty.toFixed(1)+')'); // cancel arrow rotation so the digit stays upright
+  t.textContent=String(ship);svg.appendChild(t);
+}
 function buildArrow(o){
   const f=state.formations[o.formation]||state.formations[0]||{color:PALETTE[0]};
   const col=f.color,tcol=textColorFor(col),geo=arrowGeo(),th=geo.th,len=geo.len;
@@ -501,6 +513,7 @@ function buildArrow(o){
   svg.style.position='absolute';svg.style.left=(-len/2)+'px';svg.style.top=(-th/2)+'px';svg.style.transform=`rotate(${o.angle}deg)`;svg.style.transformOrigin='center';
   const hr=document.createElementNS(NS,'rect');hr.setAttribute('x',0);hr.setAttribute('y',0);hr.setAttribute('width',len);hr.setAttribute('height',th);hr.setAttribute('fill','rgba(0,0,0,0)');svg.appendChild(hr);
   const poly=document.createElementNS(NS,'polygon');poly.setAttribute('points',arrowPolygon(len,th));poly.setAttribute('fill',col);poly.setAttribute('stroke','rgba(0,0,0,.18)');poly.setAttribute('stroke-width','1');svg.appendChild(poly);wrap.appendChild(svg);
+  if(staticMode&&o.ship){drawShipNum(svg,len,th,o.angle,o.ship,col,false);}
   {let txt=abbrevCS(o.cs);let blue=false;
    if(o.showAlt&&o.alt){txt+=(txt?'/':'')+fmtAlt(o.alt);blue=isBlueAlt(o.alt);}
    if(txt&&!staticMode){const l=document.createElement('div');l.className='lbl';l.innerHTML=esc(txt)+(blue?'<span style="color:#d11">*</span>':'');l.style.color=tcol;l.style.fontSize=geo.fs+'px';
@@ -544,6 +557,7 @@ function buildGhost(jet,end,head){
   const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',len);svg.setAttribute('height',th);svg.setAttribute('viewBox',`0 0 ${len} ${th}`);
   svg.style.position='absolute';svg.style.left=(-len/2)+'px';svg.style.top=(-th/2)+'px';svg.style.transform=`rotate(${head}deg)`;svg.style.transformOrigin='center';
   const poly=document.createElementNS(NS,'polygon');poly.setAttribute('points',arrowPolygon(len,th));poly.setAttribute('fill',col);poly.setAttribute('fill-opacity','0.35');poly.setAttribute('stroke',col);poly.setAttribute('stroke-width','1.5');svg.appendChild(poly);wrap.appendChild(svg);
+  if(staticMode&&jet.ship){drawShipNum(svg,len,th,head,jet.ship,col,true);}
   if(jet.cs&&!staticMode){const l=document.createElement('div');l.className='lbl';l.textContent=abbrevCS(jet.cs);l.style.color=textColorFor(col);l.style.fontSize=geo.fs+'px';wrap.appendChild(l);}
   if(!staticMode)onTap(wrap,()=>{selectOnly(jet.id);openInspector();});
   return wrap;
