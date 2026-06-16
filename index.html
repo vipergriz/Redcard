@@ -206,7 +206,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v89</div>
+  <div id="setupVer">Red Planning Tool v91</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -255,7 +255,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v89</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v91</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -393,7 +393,7 @@ const ARROW_LEN=330;
 let uid=1; const nid=()=>'o'+(uid++);
 
 let state={
-  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,legendCombine:{},formations:[{color:PALETTE[0],name:"MIG",ships:2,aux:"369.000",stn:"30010-1"}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
+  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,legendCombine:{},pullLeft:false,formations:[{color:PALETTE[0],name:"MIG",ships:2,aux:"369.000",stn:"30010-1"}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
   cards:[{name:'Alpha',title:'Red OCA – Vul+0',objects:[]}],cur:0,turnDir:-1,tx:0,ty:0,showMode:false,
   title:'Red OCA – Vul+0',objects:null,selected:null
 };
@@ -955,7 +955,7 @@ function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAl
     addMac("5–9 red",()=>{for(let i=0;i<=49;i++)if(i%10>=5)rs.add(i);});
     addMac("All blue",()=>rs.clear());container.appendChild(mac);
     const grid=document.createElement('div');grid.className='alt-grid';
-    for(let r=0;r<10;r++)for(let c=0;c<5;c++){const n=c*10+r;
+    for(let v=0;v<10;v++)for(let c=0;c<5;c++){const n=(9-v)*5+c;
       const cell=document.createElement('button');cell.className='alt-cell'+(rs.has(n)?' red':'')+(occ[n]&&occ[n].length?' occ':'');
       const num=document.createElement('span');num.className='ac-n';num.textContent=(n===0?'SFC':n);cell.appendChild(num);
       if(occ[n]&&occ[n].length){const t=document.createElement('span');t.className='ac-cs';t.textContent=occ[n].join(',');cell.title=occ[n].join(', ');cell.appendChild(t);}
@@ -1148,6 +1148,13 @@ function renderMasterBrief(){const c=$('masterBrief');if(!c)return;c.innerHTML='
   const note=document.createElement('div');note.style.cssText='font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.4';
   note.textContent='Info for the printed card’s left side. Leave anything blank to omit it — empty columns won’t print. Callsign comes from your formations above.';
   c.appendChild(note);
+  const pl=document.createElement('button');pl.className='btn'+(state.pullLeft?' primary':'');pl.style.cssText='width:100%;margin-bottom:6px;font-size:14px';
+  pl.textContent=(state.pullLeft?'✓ ':'')+'Pull 1st presentation to left side';
+  pl.onclick=()=>{state.pullLeft=!state.pullLeft;persist();render();renderMasterBrief();};
+  c.appendChild(pl);
+  const plnote=document.createElement('div');plnote.style.cssText='font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.4';
+  plnote.textContent='Band layouts (II / III) only. The brief shrinks into the top-left and the first presentation drops into the bottom-left — leaving the right side for the next two. 3 presentations per sheet.';
+  c.appendChild(plnote);
   state.formations.forEach((f)=>{
     const box=document.createElement('div');box.style.cssText='border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:12px;background:var(--panel2)';
     const hd=document.createElement('div');hd.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:9px';
@@ -1218,7 +1225,7 @@ $('masterAddF').onclick=()=>{if(state.formations.length>=8)return;state.formatio
 $('masterAltBtn').onclick=()=>openAltEditor(openMaster);
 function clearMission(){if(!confirm('Wipe this entire mission and start fresh? This removes all presentations, arrows, formations, altitude blocks, and settings.'))return;
   state.defaultAngle=180;state.active=0;state.fightAxis=null;state.layoutMode=1;state.scaleNM=25;state.mission=null;state.perPage=2;
-  state.formations=[{color:PALETTE[0],name:'MIG',ships:2,aux:'369.000',stn:'30010-1'}];state.redAlts=[];state.legendCombine={};state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
+  state.formations=[{color:PALETTE[0],name:'MIG',ships:2,aux:'369.000',stn:'30010-1'}];state.redAlts=[];state.legendCombine={};state.pullLeft=false;state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
   state.cards=[{name:'Alpha',title:'',objects:[]}];state.cur=0;state.title='';state.selected=null;
   state.objects=state.cards[0].objects;ensureScaleDefaults();
   loadCard(0);fitZoom();persist();flash('Mission cleared');openMaster();}
@@ -1272,7 +1279,7 @@ $('canvasWrap').addEventListener('pointerdown',e=>{const showPan=state.showMode&
 
 /* ============ SAVE / LOAD / PRINT / CLEAR ============ */
 function applyLoaded(d){
-  const ns={defaultAngle:d.defaultAngle||180,active:d.active||0,zoom:1,tx:0,ty:0,turnDir:-1,showMode:false,perPage:d.perPage||2,layoutMode:d.layoutMode||1,scaleNM:d.scaleNM||25,fightAxis:(d.fightAxis==null?null:d.fightAxis),mission:d.mission||null,showLegend:d.showLegend!==false,showGroupAlt:d.showGroupAlt!==false,legendCombine:(d.legendCombine&&typeof d.legendCombine==="object")?d.legendCombine:{},formations:d.formations||[],redAlts:Array.isArray(d.redAlts)?d.redAlts:[],tanker:Object.assign({on:false,cs:'',arct:'',track:'',alt:'',offload:''},d.tanker||{}),points:Array.isArray(d.points)?d.points:[],notesLeft:(d.notesLeft&&Array.isArray(d.notesLeft.items))?d.notesLeft:{items:[]},notesRight:(d.notesRight&&Array.isArray(d.notesRight.items))?d.notesRight:{items:[]},cards:d.cards,cur:d.cur||0,selected:null};
+  const ns={defaultAngle:d.defaultAngle||180,active:d.active||0,zoom:1,tx:0,ty:0,turnDir:-1,showMode:false,perPage:d.perPage||2,layoutMode:d.layoutMode||1,scaleNM:d.scaleNM||25,fightAxis:(d.fightAxis==null?null:d.fightAxis),mission:d.mission||null,showLegend:d.showLegend!==false,showGroupAlt:d.showGroupAlt!==false,legendCombine:(d.legendCombine&&typeof d.legendCombine==="object")?d.legendCombine:{},pullLeft:!!d.pullLeft,formations:d.formations||[],redAlts:Array.isArray(d.redAlts)?d.redAlts:[],tanker:Object.assign({on:false,cs:'',arct:'',track:'',alt:'',offload:''},d.tanker||{}),points:Array.isArray(d.points)?d.points:[],notesLeft:(d.notesLeft&&Array.isArray(d.notesLeft.items))?d.notesLeft:{items:[]},notesRight:(d.notesRight&&Array.isArray(d.notesRight.items))?d.notesRight:{items:[]},cards:d.cards,cur:d.cur||0,selected:null};
   if(!ns.cards||!ns.cards.length){ns.cards=[{name:'Alpha',title:d.title||'',objects:d.objects||[]}];ns.cur=0;}
   ns.cards.forEach(c=>{if(!Array.isArray(c.objects))c.objects=[];});
   if(!ns.formations.length)ns.formations=[{color:PALETTE[0],name:'A',ships:1}];
@@ -1283,7 +1290,7 @@ function applyLoaded(d){
 }
 let _saveT=null;
 function persist(){try{if(_saveT)clearTimeout(_saveT);}catch(_){}
-  _saveT=setTimeout(()=>{try{localStorage.setItem('dca_coord_card',JSON.stringify({defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,mission:state.mission,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,cards:state.cards,cur:state.cur}));}catch(_){}},400);}
+  _saveT=setTimeout(()=>{try{localStorage.setItem('dca_coord_card',JSON.stringify({defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,mission:state.mission,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,pullLeft:state.pullLeft,cards:state.cards,cur:state.cur}));}catch(_){}},400);}
 function tryRestore(){let s=null;try{s=localStorage.getItem('dca_coord_card');}catch(_){return false;}if(!s)return false;
   let d;try{d=JSON.parse(s);}catch(_){return false;}if(!d||(!d.cards&&!d.objects))return false;applyLoaded(d);return true;}
 
@@ -1295,7 +1302,7 @@ function ensureMission(){if(!state.mission)state.mission=defaultMission();return
 function pad2(n){return ('0'+n).slice(-2);}
 function missionBase(m){return m.date+'_'+m.ampm+'_'+(MTYPE_TOKEN[m.type]||m.type);}
 function missionName(m){return missionBase(m)+'_v'+pad2(m.version);}
-function serializableState(){return {defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,cards:state.cards,cur:state.cur};}
+function serializableState(){return {defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,pullLeft:state.pullLeft,cards:state.cards,cur:state.cur};}
 function buildMissionObj(){return {app:'RedPlanningTool',fmt:1,mission:Object.assign({},ensureMission()),savedAt:new Date().toISOString(),state:serializableState()};}
 function msIndex(){try{return JSON.parse(localStorage.getItem('rpt_missions')||'[]');}catch(_){return [];}}
 function msSetIndex(a){try{localStorage.setItem('rpt_missions',JSON.stringify(a));}catch(_){}}
@@ -1384,31 +1391,34 @@ function pointCoordStr(p){
   const lon=(String(p.lonD||'').trim()!==''||String(p.lonM||'').trim()!=='')?((p.ew||'W')+' '+padDeg(p.lonD,3)+' '+String(p.lonM||'').trim()):'';
   return [lat,lon].filter(Boolean).join('  /  ');}
 function pointsActive(){return (state.points||[]).some(p=>(p.name&&p.name.trim())||pointCoordStr(p));}
-function leftBriefHTML(){
+function leftBriefHTML(cond){
   const title=(state.cards[0]&&state.cards[0].title)||state.title||'';
   const cols=briefCols();
-  const TH='border:1px solid #111;padding:4px 6px;background:#eee;font-size:10px;letter-spacing:.4px;font-weight:800;color:#111';
-  const TD='border:1px solid #111;padding:4px 6px;text-align:center;color:#111';
-  let h='<div style="font-size:11px;letter-spacing:3px;color:#b3261e;font-weight:800">RED COORD CARD</div>';
-  if(title)h+='<div style="font-size:23px;font-weight:800;color:#111;margin:4px 0 16px;line-height:1.15">'+esc(title)+'</div>';
+  const pad=cond?'2px 4px':'4px 6px';
+  const TH='border:1px solid #111;padding:'+pad+';background:#eee;font-size:'+(cond?9:10)+'px;letter-spacing:.4px;font-weight:800;color:#111';
+  const TD='border:1px solid #111;padding:'+pad+';text-align:center;color:#111';
+  const secMT=cond?10:18,secF=cond?11:12;
+  let h='<div style="font-size:'+(cond?10:11)+'px;letter-spacing:3px;color:#b3261e;font-weight:800">RED COORD CARD</div>';
+  if(title)h+='<div style="font-size:'+(cond?16:23)+'px;font-weight:800;color:#111;margin:'+(cond?'2px 0 8px':'4px 0 16px')+';line-height:1.15">'+esc(title)+'</div>';
   h+='<table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif">';
   h+='<thead><tr><th style="'+TH+';text-align:left">CALLSIGN</th>'+cols.map(c=>'<th style="'+TH+'">'+c.h+'</th>').join('')+'</tr></thead><tbody>';
   state.formations.forEach(f=>{
-    h+='<tr><td style="'+TD+';text-align:left;font-weight:800;font-size:13px;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+f.color+';margin-right:6px;vertical-align:middle"></span>'+esc(fmtFlightCS(f))+'</td>';
-    cols.forEach(c=>{let v=f[c.k];v=(v!=null&&String(v).trim()!=='')?String(v).trim():'';if(c.k==='acft'&&v){v=(f.ships||1)+' x '+v;}h+='<td style="'+TD+';font-size:12px">'+(v?esc(v):'')+'</td>';});
+    h+='<tr><td style="'+TD+';text-align:left;font-weight:800;font-size:'+(cond?11:13)+'px;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+f.color+';margin-right:6px;vertical-align:middle"></span>'+esc(fmtFlightCS(f))+'</td>';
+    cols.forEach(c=>{let v=f[c.k];v=(v!=null&&String(v).trim()!=='')?String(v).trim():'';if(c.k==='acft'&&v){v=(f.ships||1)+' x '+v;}h+='<td style="'+TD+';font-size:'+(cond?10:12)+'px">'+(v?esc(v):'')+'</td>';});
     h+='</tr>';});
   h+='</tbody></table>';
   if(pointsActive()){
-    h+='<div style="margin-top:18px;border-top:2px solid #111;padding-top:5px;font-size:12px;font-weight:800;letter-spacing:1.5px;color:#111">POINTS</div>';
+    h+='<div style="margin-top:'+secMT+'px;border-top:2px solid #111;padding-top:5px;font-size:'+secF+'px;font-weight:800;letter-spacing:1.5px;color:#111">POINTS</div>';
     h+='<table style="border-collapse:collapse;margin-top:5px;font-family:Arial,sans-serif">';
     state.points.forEach(p=>{const cs=pointCoordStr(p);const nm=(p.name||'').trim();if(!nm&&!cs)return;
-      h+='<tr><td style="padding:2px 14px 2px 0;font-size:12px;font-weight:800;color:#111;white-space:nowrap;vertical-align:top">'+esc(nm)+'</td><td style="padding:2px 0;font-size:12px;font-weight:700;color:#111;white-space:nowrap;font-family:\'Courier New\',monospace">'+esc(cs)+'</td></tr>';});
+      h+='<tr><td style="padding:2px 14px 2px 0;font-size:'+(cond?11:12)+'px;font-weight:800;color:#111;white-space:nowrap;vertical-align:top">'+esc(nm)+'</td><td style="padding:2px 0;font-size:'+(cond?11:12)+'px;font-weight:700;color:#111;white-space:nowrap;font-family:\'Courier New\',monospace">'+esc(cs)+'</td></tr>';});
     h+='</table>';}
   if(tankerActive()){const t=state.tanker;
-    const rows=[['cs','CALLSIGN'],['arct','ARCT'],['track','TRACK'],['alt','ALT'],['offload','OFFLOAD']].filter(([k])=>t[k]&&String(t[k]).trim()!=='');
-    h+='<div style="margin-top:18px;border-top:2px solid #111;padding-top:5px;font-size:12px;font-weight:800;letter-spacing:1.5px;color:#111">TANKER</div>';
-    h+='<table style="border-collapse:collapse;margin-top:5px;font-family:Arial,sans-serif">';
-    rows.forEach(([k,lab])=>{h+='<tr><td style="padding:2px 14px 2px 0;font-size:11px;font-weight:700;color:#555;white-space:nowrap">'+lab+'</td><td style="padding:2px 0;font-size:13px;font-weight:700;color:#111;white-space:nowrap">'+esc(String(t[k]).trim())+'</td></tr>';});
+    const cells=[['cs','CALLSIGN'],['arct','ARCT'],['track','TRACK'],['alt','ALT'],['offload','OFFLOAD']].filter(([k])=>t[k]&&String(t[k]).trim()!=='');
+    h+='<div style="margin-top:'+secMT+'px;border-top:2px solid #111;padding-top:5px;font-size:'+secF+'px;font-weight:800;letter-spacing:1.5px;color:#111">TANKER</div>';
+    h+='<table style="border-collapse:collapse;margin-top:5px;width:100%;font-family:Arial,sans-serif">';
+    h+='<thead><tr>'+cells.map(([k,lab])=>'<th style="'+TH+'">'+lab+'</th>').join('')+'</tr></thead>';
+    h+='<tbody><tr>'+cells.map(([k])=>'<td style="'+TD+';font-size:'+(cond?10:12)+'px;white-space:nowrap">'+esc(String(t[k]).trim())+'</td>').join('')+'</tr></tbody>';
     h+='</table>';}
   return h;
 }
@@ -1461,13 +1471,20 @@ function buildPageFor(group,fullH){
   const page=document.createElement('div');page.className='print-page';page.style.width=PW+'px';page.style.height=fullH+'px';
   const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';page.appendChild(content);
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';content.appendChild(fold);
-  const notesH=Math.round(SH*0.33),lNotes=notesActive('left'),rNotes=notesActive('right'),notesY=SH-notesH;
-  const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+(lNotes?(notesY-12):SH)+'px;padding:46px 40px;box-sizing:border-box;overflow:hidden';
-  left.innerHTML=leftBriefHTML();
+  const notesH=Math.round(SH*0.33),rNotes=notesActive('right'),notesY=SH-notesH,m=lmode();
+  const cond=(!!state.pullLeft)&&(m!==1)&&group.length>1; // pull first presentation into the bottom-left
+  const lNotes=notesActive('left')&&!cond;
+  const briefH=cond?Math.round(SH*0.50):(lNotes?(notesY-12):SH);
+  const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+briefH+'px;padding:'+(cond?'30px 34px':'46px 40px')+';box-sizing:border-box;overflow:hidden';
+  left.innerHTML=leftBriefHTML(cond);
   content.appendChild(left);
-  const RPAD=6,rx=HALF+24,rw=(SW+PAD-RPAD)-rx,top=14,rh=(rNotes?(notesY-12-top):(SH-2*top)),m=lmode();
+  const RPAD=6,rx=HALF+24,rw=(SW+PAD-RPAD)-rx,top=14,rh=(rNotes?(notesY-12-top):(SH-2*top));
   if(m===1){const cols=3,rows=2,cgap=12,rgap=14;const cw=(rw-(cols-1)*cgap)/cols,chh=(rh-(rows-1)*rgap)/rows;
     group.forEach((card,bi)=>{if(bi>=cols*rows)return;const r=Math.floor(bi/cols),c=bi%cols;buildCell(content,card,rx+c*(cw+cgap),top+r*(chh+rgap),cw,chh);});
+  }else if(cond){const lbGap=16,lbY=briefH+lbGap,lbX=40,lbW=HALF-80,lbH=SH-lbY;
+    if(group[0])buildBand(content,group[0],lbX,lbY,lbW,lbH);
+    const slots=2,vgap=14,bh=(rh-(slots-1)*vgap)/slots;
+    [group[1],group[2]].forEach((card,bi)=>{if(card)buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh);});
   }else{const slots=2,vgap=14;const bh=(rh-(slots-1)*vgap)/slots;
     group.forEach((card,bi)=>{if(bi<slots)buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh);});}
   if(lNotes)content.appendChild(buildNotesBox('left',40,notesY,HALF-80,notesH));
@@ -1478,7 +1495,7 @@ function buildPages(scaled){
   const sheet=$('printSheet');sheet.innerHTML='';
   const PW=1056,PH=PRINT_H;
   const pv=scaled?Math.min(1,(window.innerWidth-24)/PW):1;
-  const m=lmode(),per=m===1?6:2;
+  const m=lmode(),per=m===1?6:((state.pullLeft&&m!==1)?3:2);
   for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);const page=buildPageFor(group,PRINT_H);
     if(scaled){const h=document.createElement('div');h.className='pageholder';h.style.width=(PW*pv)+'px';h.style.height=(PH*pv)+'px';page.style.transform='scale('+pv+')';page.style.transformOrigin='top left';h.appendChild(page);sheet.appendChild(h);}
     else sheet.appendChild(page);}
@@ -1527,7 +1544,7 @@ async function exportPDF(btn){
   const old=btn?btn.textContent:'';if(btn){btn.textContent='Building…';btn.disabled=true;}
   const holder=document.createElement('div');holder.style.cssText='position:fixed;left:-99999px;top:0;background:#fff';document.body.appendChild(holder);
   try{
-    const m=lmode(),per=m===1?6:2,R=3,imgs=[];
+    const m=lmode(),per=m===1?6:((state.pullLeft&&m!==1)?3:2),R=3,imgs=[];
     if(!state.cards.length){flash('No cards to export');return;}
     for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);
       const page=buildPageFor(group,816);holder.appendChild(page);
