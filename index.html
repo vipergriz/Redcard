@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v97</div>
+  <div id="setupVer">Red Planning Tool v98</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v97</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v98</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -1429,8 +1429,8 @@ function leftBriefHTML(cond){
 }
 function notesData(side){return side==='left'?(state.notesLeft||(state.notesLeft={items:[]})):(state.notesRight||(state.notesRight={items:[]}));}
 function notesActive(side){const d=notesData(side);return !!(d&&d.items&&d.items.some(it=>(it.text||'').trim()!==''));}
-function notesBoxDims(side){const SW=1032,SH=792,HALF=SW/2,PAD=12,RPAD=6,notesH=Math.round(SH*0.33);
-  if(side==='left')return {w:HALF-12,h:notesH};const rx=HALF+24,rw=(SW+PAD-RPAD)-rx;return {w:rw,h:notesH};}
+function notesBoxDims(side){const SW=1044,SH=804,HALF=SW/2,FG=12,notesH=Math.round(SH*0.33);
+  if(side==='left')return {w:HALF-FG,h:notesH};const rx=HALF+FG,rw=SW-rx;return {w:rw,h:notesH};}
 function buildNotesBox(side,x,y,w,h){
   const data=notesData(side),HDR=22;
   const box=document.createElement('div');box.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px;border:1.5px solid #111;border-radius:6px;box-sizing:border-box;overflow:hidden;background:#fff';
@@ -1473,7 +1473,7 @@ function openNotesEditor(side){
 const PRINT_H=726; // browser-print page height in px: short enough to clear iOS Safari's footer band and stay on ONE page, while using the FULL 11in width. Export PDF passes 816 (full 8.5in).
 function buildPageFor(group,fullH){
   fullH=fullH||816;
-  const PW=1056,PAD=10,SW=PW-2*PAD,SH=fullH-2*PAD,HALF=SW/2;
+  const PW=1056,PAD=6,SW=PW-2*PAD,SH=fullH-2*PAD,HALF=SW/2;
   const page=document.createElement('div');page.className='print-page';page.style.width=PW+'px';page.style.height=fullH+'px';
   const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';page.appendChild(content);
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';content.appendChild(fold);
@@ -1482,19 +1482,19 @@ function buildPageFor(group,fullH){
   const lNotes=notesActive('left');
   const lNoteH=cond?(lNotes?Math.round(SH*0.22):0):(lNotes?notesH:0);
   const briefH=cond?(lNotes?Math.round(SH*0.34):Math.round(SH*0.50)):(lNotes?(notesY-12):SH);
-  const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+briefH+'px;padding:'+(cond?'20px 6px':'30px 6px')+';box-sizing:border-box;overflow:hidden';
+  const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+briefH+'px;padding:'+(cond?'20px 12px 20px 0':'30px 12px 30px 0')+';box-sizing:border-box;overflow:hidden';
   left.innerHTML=leftBriefHTML(cond);
   content.appendChild(left);
-  const RPAD=6,rx=HALF+24,rw=(SW+PAD-RPAD)-rx,top=14,rh=(rNotes?(notesY-12-top):(SH-2*top));
+  const FG=12,rx=HALF+FG,rw=SW-rx,top=14,rh=(rNotes?(notesY-12-top):(SH-2*top));
   if(m===1){const cols=3,rows=2,cgap=12,rgap=14;const cw=(rw-(cols-1)*cgap)/cols,chh=(rh-(rows-1)*rgap)/rows;
     group.forEach((card,bi)=>{if(bi>=cols*rows)return;const r=Math.floor(bi/cols),c=bi%cols;buildCell(content,card,rx+c*(cw+cgap),top+r*(chh+rgap),cw,chh);});
-  }else if(cond){const lbGap=14,lbY=briefH+lbGap,lbX=6,lbW=HALF-12,lbBot=SH-(lNotes?(lNoteH+lbGap):0),lbH=lbBot-lbY;
+  }else if(cond){const lbGap=14,lbY=briefH+lbGap,lbX=0,lbW=HALF-FG,lbBot=SH-(lNotes?(lNoteH+lbGap):0),lbH=lbBot-lbY;
     if(group[0])buildBand(content,group[0],lbX,lbY,lbW,lbH);
     const rc=[group[1],group[2]].filter(Boolean),slots=Math.max(1,rc.length),vgap=14,bh=(rh-(slots-1)*vgap)/slots;
     rc.forEach((card,bi)=>buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh));
   }else{const rc=group.filter(Boolean).slice(0,2),slots=Math.max(1,rc.length),vgap=14,bh=(rh-(slots-1)*vgap)/slots;
     rc.forEach((card,bi)=>buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh));}
-  if(lNotes)content.appendChild(buildNotesBox('left',6,cond?(SH-lNoteH):notesY,HALF-12,lNoteH));
+  if(lNotes)content.appendChild(buildNotesBox('left',0,cond?(SH-lNoteH):notesY,HALF-FG,lNoteH));
   if(rNotes)content.appendChild(buildNotesBox('right',rx,notesY,rw,notesH));
   return page;
 }
