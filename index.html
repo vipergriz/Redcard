@@ -200,7 +200,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v85</div>
+  <div id="setupVer">Red Planning Tool v86</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -249,7 +249,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v85</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v86</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -496,7 +496,7 @@ function arrowFitLen(o){return arrowGeo().len;}
 function drawShipNum(svg,len,th,angle,ship,fillCol,dark){
   // position number centered in the arrowHEAD, upright, largest contrasting digit that fits
   const ah=Math.min(th*0.95,len*0.42);
-  const tx=len-ah*0.58, ty=th/2, fs=Math.max(8,Math.round(th*0.74));
+  const tx=len-ah*0.72, ty=th/2, fs=Math.max(8,Math.round(th*0.72));
   const t=document.createElementNS(NS,'text');
   t.setAttribute('x',tx.toFixed(1));t.setAttribute('y',ty.toFixed(1));
   t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','central');
