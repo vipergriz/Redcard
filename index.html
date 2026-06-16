@@ -124,6 +124,8 @@
   .alt-cell .ac-n{font-size:15px}
   .alt-cell .ac-cs{font-size:8px;font-weight:700;margin-top:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.95}
   .alt-cell.occ{outline:2px solid #ffd400;outline-offset:-2px}
+  .alt-div{grid-column:1/-1;height:0;border-top:2px solid #8a98ad;margin:3px 0}
+  .nchip [contenteditable]:empty:before{content:attr(data-ph);color:var(--muted);pointer-events:none}
   .pick-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .pick-sel{flex:1;font-size:14px;color:var(--txt)}
   .pick-sel .hint{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
@@ -206,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v91</div>
+  <div id="setupVer">Red Planning Tool v94</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -255,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v91</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v94</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -955,12 +957,15 @@ function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAl
     addMac("5–9 red",()=>{for(let i=0;i<=49;i++)if(i%10>=5)rs.add(i);});
     addMac("All blue",()=>rs.clear());container.appendChild(mac);
     const grid=document.createElement('div');grid.className='alt-grid';
-    for(let v=0;v<10;v++)for(let c=0;c<5;c++){const n=(9-v)*5+c;
-      const cell=document.createElement('button');cell.className='alt-cell'+(rs.has(n)?' red':'')+(occ[n]&&occ[n].length?' occ':'');
+    const mkCell=(n)=>{const cell=document.createElement('button');cell.className='alt-cell'+(rs.has(n)?' red':'')+(occ[n]&&occ[n].length?' occ':'');
       const num=document.createElement('span');num.className='ac-n';num.textContent=(n===0?'SFC':n);cell.appendChild(num);
       if(occ[n]&&occ[n].length){const t=document.createElement('span');t.className='ac-cs';t.textContent=occ[n].join(',');cell.title=occ[n].join(', ');cell.appendChild(t);}
       cell.onclick=()=>{if(rs.has(n))rs.delete(n);else rs.add(n);sync();cell.classList.toggle('red');cell.classList.toggle('occ',occ[n]&&occ[n].length);if(opts.onChange)opts.onChange();};
-      grid.appendChild(cell);}
+      return cell;};
+    for(let dec=4;dec>=0;dec--){
+      for(let row=1;row>=0;row--)for(let c=0;c<5;c++)grid.appendChild(mkCell(dec*10+row*5+c));
+      if(dec>0){const dv=document.createElement('div');dv.className='alt-div';grid.appendChild(dv);}
+    }
     container.appendChild(grid);return;}
   // ---- picker: vertical tape with block selection ----
   let anchor=null,hasBlock=false,curLow=null,curHigh=null;const rowEls=[];
@@ -1448,7 +1453,7 @@ function openNotesEditor(side){
       chip.style.cssText='position:absolute;display:flex;align-items:flex-start;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px 4px;max-width:88%;box-shadow:0 2px 8px rgba(0,0,0,.3)';
       chip.style.left=((it.x||0)*bw)+'px';chip.style.top=(HEADER+(it.y||0)*(bh-HEADER))+'px';
       const grip=document.createElement('div');grip.textContent='⠿';grip.style.cssText='cursor:grab;color:var(--muted);font-size:16px;line-height:1.1;padding:0 2px;flex:0 0 auto;touch-action:none;user-select:none';
-      const txt=document.createElement('div');txt.contentEditable='true';txt.textContent=it.text||'';txt.style.cssText='min-width:24px;outline:none;font-family:Arial,sans-serif;font-size:14px;color:var(--txt);white-space:pre-wrap';
+      const txt=document.createElement('div');txt.contentEditable='true';txt.setAttribute('data-ph','type…');txt.textContent=it.text||'';txt.style.cssText='min-width:36px;outline:none;font-family:Arial,sans-serif;font-size:14px;color:var(--txt);white-space:pre-wrap';
       txt.addEventListener('input',()=>{it.text=txt.textContent;persist();render();});
       const del=document.createElement('button');del.textContent='✕';del.style.cssText='border:none;background:none;color:var(--muted);font-size:13px;cursor:pointer;flex:0 0 auto;padding:0 2px;align-self:flex-start';del.onclick=()=>{data.items.splice(idx,1);persist();render();renderChips();};
       chip.append(grip,txt,del);
@@ -1460,9 +1465,10 @@ function openNotesEditor(side){
       stage.appendChild(chip);});}
   renderChips();card.appendChild(stage);
   const ctr=document.createElement('div');ctr.style.cssText='display:flex;gap:10px;margin-top:14px';
-  const add=document.createElement('button');add.className='btn primary';add.style.flex='1';add.textContent='+ phrase';add.onclick=()=>{data.items.push({text:'New note',x:0.04,y:0.04+0.13*(data.items.length%5)});persist();render();renderChips();};
+  const add=document.createElement('button');add.className='btn primary';add.style.flex='1';add.textContent='+ phrase';add.onclick=()=>{data.items.push({text:'',x:0.04,y:0.04+0.13*(data.items.length%5)});persist();render();renderChips();const chips=stage.querySelectorAll('.nchip [contenteditable]');const last=chips[chips.length-1];if(last){last.focus();}};
+  const clr=document.createElement('button');clr.className='btn';clr.style.flex='0 0 auto';clr.textContent='Clear all';clr.onclick=()=>{if(data.items.length&&!confirm('Remove all notes on this side?'))return;data.items=[];if(side==='left')state.notesLeft=data;else state.notesRight=data;persist();render();renderChips();};
   const done=document.createElement('button');done.className='btn';done.style.flex='0 0 auto';done.textContent='Done';done.onclick=()=>{ov.remove();if($('masterBrief'))renderMasterBrief();};
-  ctr.append(add,done);card.appendChild(ctr);
+  ctr.append(add,clr,done);card.appendChild(ctr);
   ov.appendChild(card);document.body.appendChild(ov);}
 const PRINT_H=726; // browser-print page height in px: short enough to clear iOS Safari's footer band and stay on ONE page, while using the FULL 11in width. Export PDF passes 816 (full 8.5in).
 function buildPageFor(group,fullH){
@@ -1473,21 +1479,22 @@ function buildPageFor(group,fullH){
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';content.appendChild(fold);
   const notesH=Math.round(SH*0.33),rNotes=notesActive('right'),notesY=SH-notesH,m=lmode();
   const cond=(!!state.pullLeft)&&(m!==1)&&group.length>1; // pull first presentation into the bottom-left
-  const lNotes=notesActive('left')&&!cond;
-  const briefH=cond?Math.round(SH*0.50):(lNotes?(notesY-12):SH);
+  const lNotes=notesActive('left');
+  const lNoteH=cond?(lNotes?Math.round(SH*0.22):0):(lNotes?notesH:0);
+  const briefH=cond?(lNotes?Math.round(SH*0.34):Math.round(SH*0.50)):(lNotes?(notesY-12):SH);
   const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+briefH+'px;padding:'+(cond?'30px 34px':'46px 40px')+';box-sizing:border-box;overflow:hidden';
   left.innerHTML=leftBriefHTML(cond);
   content.appendChild(left);
   const RPAD=6,rx=HALF+24,rw=(SW+PAD-RPAD)-rx,top=14,rh=(rNotes?(notesY-12-top):(SH-2*top));
   if(m===1){const cols=3,rows=2,cgap=12,rgap=14;const cw=(rw-(cols-1)*cgap)/cols,chh=(rh-(rows-1)*rgap)/rows;
     group.forEach((card,bi)=>{if(bi>=cols*rows)return;const r=Math.floor(bi/cols),c=bi%cols;buildCell(content,card,rx+c*(cw+cgap),top+r*(chh+rgap),cw,chh);});
-  }else if(cond){const lbGap=16,lbY=briefH+lbGap,lbX=40,lbW=HALF-80,lbH=SH-lbY;
+  }else if(cond){const lbGap=14,lbY=briefH+lbGap,lbX=40,lbW=HALF-80,lbBot=SH-(lNotes?(lNoteH+lbGap):0),lbH=lbBot-lbY;
     if(group[0])buildBand(content,group[0],lbX,lbY,lbW,lbH);
-    const slots=2,vgap=14,bh=(rh-(slots-1)*vgap)/slots;
-    [group[1],group[2]].forEach((card,bi)=>{if(card)buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh);});
-  }else{const slots=2,vgap=14;const bh=(rh-(slots-1)*vgap)/slots;
-    group.forEach((card,bi)=>{if(bi<slots)buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh);});}
-  if(lNotes)content.appendChild(buildNotesBox('left',40,notesY,HALF-80,notesH));
+    const rc=[group[1],group[2]].filter(Boolean),slots=Math.max(1,rc.length),vgap=14,bh=(rh-(slots-1)*vgap)/slots;
+    rc.forEach((card,bi)=>buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh));
+  }else{const rc=group.filter(Boolean).slice(0,2),slots=Math.max(1,rc.length),vgap=14,bh=(rh-(slots-1)*vgap)/slots;
+    rc.forEach((card,bi)=>buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh));}
+  if(lNotes)content.appendChild(buildNotesBox('left',40,cond?(SH-lNoteH):notesY,HALF-80,lNoteH));
   if(rNotes)content.appendChild(buildNotesBox('right',rx,notesY,rw,notesH));
   return page;
 }
