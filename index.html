@@ -200,7 +200,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v87</div>
+  <div id="setupVer">Red Planning Tool v88</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -249,7 +249,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v87</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v88</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -683,7 +683,7 @@ function presLegend(objs){const map=new Map();const comb=state.legendCombine||{}
   return [...map.values()].sort((a,b)=>a.fi-b.fi||a.ship-b.ship).map(e=>({cs:e.cs,color:e.color,alt:[...e.alts].join(', '),blue:e.blue,fi:e.fi}));}
 function legendEl(objs,fs,horiz,interactive){fs=fs||14;const lg=presLegend(objs);const box=document.createElement('div');
   if(!lg.length){box.textContent='';return box;}
-  const shipMap={};for(const o of objs){if(o.type==='arrow'&&(o.ship||0)>0){const fi=(o.formation==null?99:o.formation);(shipMap[fi]||(shipMap[fi]=new Set())).add(o.ship);}}
+  const shipMap={};for(const o of objs){if(o.type==='arrow'){const fi=(o.formation==null?99:o.formation);(shipMap[fi]||(shipMap[fi]=new Set())).add(o.ship||0);}}
   const comb=state.legendCombine||{};
   if(horiz)box.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax('+Math.round(fs*8.5)+'px,1fr));gap:'+Math.round(fs*0.4)+'px '+Math.round(fs*0.9)+'px;align-content:flex-start;background:rgba(255,255,255,.97);border-radius:7px;box-sizing:border-box;padding:'+Math.round(fs*0.4)+'px';
   else box.style.cssText='display:flex;flex-direction:column;gap:'+Math.max(2,Math.round(fs*0.4))+'px;background:rgba(255,255,255,.97);border-radius:6px;box-sizing:border-box;padding:'+Math.round(fs*0.3)+'px';
