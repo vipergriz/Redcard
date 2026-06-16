@@ -118,6 +118,12 @@
   .alt-row.red{background:#5a2320;color:#ffd9d4;border-color:#a6301c}
   .alt-row.picked{outline:3px solid #ffd400;outline-offset:-3px}
   .alt-row .occ{position:absolute;right:7px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.32);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:7px;letter-spacing:.3px}
+  .alt-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+  .alt-cell{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px;border-radius:8px;border:1px solid #2a4a6b;background:#16407a;color:#dbe9ff;font-weight:800;font-family:"Courier New",monospace;line-height:1}
+  .alt-cell.red{background:#a6301c;color:#ffe3dd;border-color:#c9482e}
+  .alt-cell .ac-n{font-size:15px}
+  .alt-cell .ac-cs{font-size:8px;font-weight:700;margin-top:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.95}
+  .alt-cell.occ{outline:2px solid #ffd400;outline-offset:-2px}
   .pick-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .pick-sel{flex:1;font-size:14px;color:var(--txt)}
   .pick-sel .hint{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
@@ -200,7 +206,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v88</div>
+  <div id="setupVer">Red Planning Tool v89</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -249,7 +255,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v88</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v89</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -387,7 +393,7 @@ const ARROW_LEN=330;
 let uid=1; const nid=()=>'o'+(uid++);
 
 let state={
-  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,legendCombine:{},formations:[{color:PALETTE[0],name:"MIG",ships:4}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
+  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,legendCombine:{},formations:[{color:PALETTE[0],name:"MIG",ships:2,aux:"369.000",stn:"30010-1"}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
   cards:[{name:'Alpha',title:'Red OCA – Vul+0',objects:[]}],cur:0,turnDir:-1,tx:0,ty:0,showMode:false,
   title:'Red OCA – Vul+0',objects:null,selected:null
 };
@@ -926,7 +932,7 @@ $('cardTitleBtn').addEventListener('click',()=>{openMenu();setTimeout(()=>$('men
 document.querySelectorAll('#toolSheet [data-add]').forEach(b=>b.addEventListener('click',()=>addObject(b.dataset.add)));
 $('pictureBtn').addEventListener('click',()=>{closeSheets();openPictureTool();});
 $('editFormBtn').addEventListener('click',openMenu);
-$('altBlocksBtn').addEventListener('click',openAltEditor);
+$('altBlocksBtn').addEventListener('click',()=>openAltEditor(openMenu));
 
 function renderActiveChips(){const c=$('activeChips');c.innerHTML='';
   state.formations.forEach((f,i)=>{const d=document.createElement('div');d.className='chip'+(i===state.active?' sel':'');
@@ -941,32 +947,42 @@ function buildOccupancy(excludeId){const m={};
   return m;}
 function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAlts||[]);container.innerHTML='';
   const sync=()=>{state.redAlts=[...rs].sort((a,b)=>a-b);};
-  const pick=opts.pick;const occ=pick?buildOccupancy(opts.excludeId):null;
-  let anchor=null,hasBlock=false,curLow=null,curHigh=null;const rowEls=[];
-  if(!pick){const mac=document.createElement('div');mac.className='preset';mac.style.marginBottom='10px';
+  const pick=opts.pick;const occ=buildOccupancy(opts.excludeId);
+  if(!pick){
+    const mac=document.createElement('div');mac.className='preset';mac.style.marginBottom='10px';
     const addMac=(t,fn)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{fn();sync();buildAltTape(container,opts);if(opts.onChange)opts.onChange();};mac.appendChild(b);};
-    addMac("0's→4's red",()=>{for(let i=0;i<=50;i++)if(i%10<=4)rs.add(i);});
-    addMac("5's→9's red",()=>{for(let i=0;i<=50;i++)if(i%10>=5)rs.add(i);});
+    addMac("0–4 red",()=>{for(let i=0;i<=49;i++)if(i%10<=4)rs.add(i);});
+    addMac("5–9 red",()=>{for(let i=0;i<=49;i++)if(i%10>=5)rs.add(i);});
     addMac("All blue",()=>rs.clear());container.appendChild(mac);
-  }else{const hdr=document.createElement('div');hdr.className='pick-hdr';
-    const selLabel=document.createElement('div');selLabel.className='pick-sel';
-    selLabel.innerHTML='Tap a level to set it. Tap a second level to make a block.<span class="hint">Tap ✕ when done — your pick is saved. Callsigns show who already holds a block.</span>';
-    hdr.append(selLabel);container.appendChild(hdr);}
+    const grid=document.createElement('div');grid.className='alt-grid';
+    for(let r=0;r<10;r++)for(let c=0;c<5;c++){const n=c*10+r;
+      const cell=document.createElement('button');cell.className='alt-cell'+(rs.has(n)?' red':'')+(occ[n]&&occ[n].length?' occ':'');
+      const num=document.createElement('span');num.className='ac-n';num.textContent=(n===0?'SFC':n);cell.appendChild(num);
+      if(occ[n]&&occ[n].length){const t=document.createElement('span');t.className='ac-cs';t.textContent=occ[n].join(',');cell.title=occ[n].join(', ');cell.appendChild(t);}
+      cell.onclick=()=>{if(rs.has(n))rs.delete(n);else rs.add(n);sync();cell.classList.toggle('red');cell.classList.toggle('occ',occ[n]&&occ[n].length);if(opts.onChange)opts.onChange();};
+      grid.appendChild(cell);}
+    container.appendChild(grid);return;}
+  // ---- picker: vertical tape with block selection ----
+  let anchor=null,hasBlock=false,curLow=null,curHigh=null;const rowEls=[];
+  const hdr=document.createElement('div');hdr.className='pick-hdr';
+  const selLabel=document.createElement('div');selLabel.className='pick-sel';
+  selLabel.innerHTML='Tap a level to set it. Tap a second level to make a block.<span class="hint">Tap ✕ when done — your pick is saved. Callsigns show who already holds a block.</span>';
+  hdr.append(selLabel);container.appendChild(hdr);
   const tape=document.createElement('div');tape.className='alt-tape';
   for(let n=50;n>=0;n--){const row=document.createElement('button');row.className='alt-row'+(rs.has(n)?' red':'');
     row.appendChild(Object.assign(document.createElement('span'),{textContent:(n===0?'SFC':n)}));
-    if(pick&&occ[n]&&occ[n].length){const tag=document.createElement('span');tag.className='occ';tag.textContent=occ[n].join(', ');row.appendChild(tag);}
-    row.onclick=()=>{if(pick){
+    if(occ[n]&&occ[n].length){const tag=document.createElement('span');tag.className='occ';tag.textContent=occ[n].join(', ');row.appendChild(tag);}
+    row.onclick=()=>{
         if(anchor===null||hasBlock){anchor=n;hasBlock=false;curLow=curHigh=n;}
         else if(n===anchor){curLow=curHigh=n;hasBlock=false;}
         else{curLow=Math.min(anchor,n);curHigh=Math.max(anchor,n);hasBlock=true;}
-        pick(curLow===curHigh?(curLow===0?'SFC':String(curLow)):(curLow+'-'+curHigh));refresh();return;}
-      if(rs.has(n))rs.delete(n);else rs.add(n);sync();row.classList.toggle('red');if(opts.onChange)opts.onChange();};
+        pick(curLow===curHigh?(curLow===0?'SFC':String(curLow)):(curLow+'-'+curHigh));refresh();return;};
     rowEls[n]=row;tape.appendChild(row);}
   container.appendChild(tape);
   function refresh(){for(let n=0;n<=50;n++)if(rowEls[n])rowEls[n].classList.toggle('picked',curLow!==null&&n>=curLow&&n<=curHigh);}
-  if(pick){const c=(opts.current||'').trim();if(c){if(c.includes('-')){const p=c.split('-');const a=p[0]==='SFC'?0:parseInt(p[0]),b=p[1]==='SFC'?0:parseInt(p[1]);if(!isNaN(a)&&!isNaN(b)){curLow=Math.min(a,b);curHigh=Math.max(a,b);anchor=curLow;hasBlock=true;}}else{const v=c==='SFC'?0:parseInt(c);if(!isNaN(v)){curLow=curHigh=v;anchor=v;hasBlock=false;}}}refresh();}}
-function openAltEditor(){$('altTitle').textContent='Red air altitude blocks';$('altHelp').textContent='Tap a level to flag it Red air. Blue = Blue air. Macros fill quick blocks.';buildAltTape($('altBody'),{onChange:render});openSheet('altSheet');}
+  const cc=(opts.current||'').trim();if(cc){if(cc.includes('-')){const p=cc.split('-');const a=p[0]==='SFC'?0:parseInt(p[0]),b=p[1]==='SFC'?0:parseInt(p[1]);if(!isNaN(a)&&!isNaN(b)){curLow=Math.min(a,b);curHigh=Math.max(a,b);anchor=curLow;hasBlock=true;}}else{const v=cc==='SFC'?0:parseInt(cc);if(!isNaN(v)){curLow=curHigh=v;anchor=v;hasBlock=false;}}}refresh();
+}
+function openAltEditor(back){$('altTitle').textContent='Red air altitude blocks';$('altHelp').textContent='Tap a level to flag it Red air. Blue = Blue air. Macros fill quick blocks.';buildAltTape($('altBody'),{onChange:render});openSheet('altSheet');if(back)sheetCloseHook=back;}
 function askActionRange(card){
   const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:26px';
   const cardEl=document.createElement('div');cardEl.style.cssText='background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:340px;width:100%;padding:22px';
@@ -1199,10 +1215,10 @@ $('masterBriefBtn').onclick=()=>{const w=$('masterBriefWrap'),open=w.style.displ
 [...$('masterDir').children].forEach(b=>b.onclick=()=>{state.defaultAngle=+b.dataset.ang;[...$('masterDir').children].forEach(x=>x.classList.toggle('sel',x===b));render();});
 $('masterAxis').addEventListener('input',e=>{state.fightAxis=e.target.value===''?null:Number(e.target.value);render();});
 $('masterAddF').onclick=()=>{if(state.formations.length>=8)return;state.formations.push({color:PALETTE[state.formations.length],name:'',ships:1});refreshFEdits();render();};
-$('masterAltBtn').onclick=openAltEditor;
+$('masterAltBtn').onclick=()=>openAltEditor(openMaster);
 function clearMission(){if(!confirm('Wipe this entire mission and start fresh? This removes all presentations, arrows, formations, altitude blocks, and settings.'))return;
   state.defaultAngle=180;state.active=0;state.fightAxis=null;state.layoutMode=1;state.scaleNM=25;state.mission=null;state.perPage=2;
-  state.formations=[{color:PALETTE[0],name:'MIG',ships:4}];state.redAlts=[];state.legendCombine={};state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
+  state.formations=[{color:PALETTE[0],name:'MIG',ships:2,aux:'369.000',stn:'30010-1'}];state.redAlts=[];state.legendCombine={};state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
   state.cards=[{name:'Alpha',title:'',objects:[]}];state.cur=0;state.title='';state.selected=null;
   state.objects=state.cards[0].objects;ensureScaleDefaults();
   loadCard(0);fitZoom();persist();flash('Mission cleared');openMaster();}
@@ -1379,7 +1395,7 @@ function leftBriefHTML(){
   h+='<thead><tr><th style="'+TH+';text-align:left">CALLSIGN</th>'+cols.map(c=>'<th style="'+TH+'">'+c.h+'</th>').join('')+'</tr></thead><tbody>';
   state.formations.forEach(f=>{
     h+='<tr><td style="'+TD+';text-align:left;font-weight:800;font-size:13px;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+f.color+';margin-right:6px;vertical-align:middle"></span>'+esc(fmtFlightCS(f))+'</td>';
-    cols.forEach(c=>{const v=f[c.k];h+='<td style="'+TD+';font-size:12px">'+(v!=null&&String(v).trim()!==''?esc(String(v).trim()):'')+'</td>';});
+    cols.forEach(c=>{let v=f[c.k];v=(v!=null&&String(v).trim()!=='')?String(v).trim():'';if(c.k==='acft'&&v){v=(f.ships||1)+' x '+v;}h+='<td style="'+TD+';font-size:12px">'+(v?esc(v):'')+'</td>';});
     h+='</tr>';});
   h+='</tbody></table>';
   if(pointsActive()){
