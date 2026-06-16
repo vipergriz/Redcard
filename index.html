@@ -200,7 +200,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v86</div>
+  <div id="setupVer">Red Planning Tool v87</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -249,7 +249,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v86</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v87</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -387,7 +387,7 @@ const ARROW_LEN=330;
 let uid=1; const nid=()=>'o'+(uid++);
 
 let state={
-  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,formations:[{color:PALETTE[0],name:'MIG',ships:4}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
+  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,legendCombine:{},formations:[{color:PALETTE[0],name:"MIG",ships:4}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
   cards:[{name:'Alpha',title:'Red OCA – Vul+0',objects:[]}],cur:0,turnDir:-1,tx:0,ty:0,showMode:false,
   title:'Red OCA – Vul+0',objects:null,selected:null
 };
@@ -671,11 +671,20 @@ function lastSegTrail(inner,jet,n){const segs=chainGeom(jet);if(!segs.length)ret
   const path=document.createElementNS(NS,'path');path.setAttribute('d',d);path.setAttribute('fill','none');path.setAttribute('stroke',col);path.setAttribute('stroke-width',th);path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);
   inner.appendChild(svg);}
 function bracketShows(o,t){const res=(o.phase==='resolved');if(t==='resolved'||t==='origin'||t==='origin2')return res;if(t==='step')return lmode()===1?!res:false;if(t==='combined'&&printMode&&lmode()!==1)return false;return !res;}
-function presLegend(objs){const map=new Map();
-  for(const o of objs){if(o.type!=='arrow')continue;const cs=(o.cs||'').toUpperCase()||'—';if(!map.has(cs))map.set(cs,{cs,color:(state.formations[o.formation]||{}).color||'#888',fi:(o.formation==null?99:o.formation),ship:(o.ship||0),alts:new Set(),blue:false});const e=map.get(cs);if(o.showAlt&&o.alt){e.alts.add(fmtAlt(o.alt));if(isBlueAlt(o.alt))e.blue=true;}}
-  return [...map.values()].sort((a,b)=>a.fi-b.fi||a.ship-b.ship).map(e=>({cs:e.cs,color:e.color,alt:[...e.alts].join(', '),blue:e.blue}));}
-function legendEl(objs,fs,horiz){fs=fs||14;const lg=presLegend(objs);const box=document.createElement('div');
+function presLegend(objs){const map=new Map();const comb=state.legendCombine||{};
+  for(const o of objs){if(o.type!=='arrow')continue;
+    const fi=(o.formation==null?99:o.formation);const f=state.formations[fi]||{};
+    const combine=!!comb[fi];
+    const cs=(o.cs||'').toUpperCase()||'—';
+    const key=combine?('FI'+fi):cs;
+    const label=combine?(((f.name||cs)+'').toUpperCase()):cs;
+    if(!map.has(key))map.set(key,{cs:label,color:(f.color||'#888'),fi,ship:combine?0:(o.ship||0),alts:new Set(),blue:false});
+    const e=map.get(key);if(o.showAlt&&o.alt){e.alts.add(fmtAlt(o.alt));if(isBlueAlt(o.alt))e.blue=true;}}
+  return [...map.values()].sort((a,b)=>a.fi-b.fi||a.ship-b.ship).map(e=>({cs:e.cs,color:e.color,alt:[...e.alts].join(', '),blue:e.blue,fi:e.fi}));}
+function legendEl(objs,fs,horiz,interactive){fs=fs||14;const lg=presLegend(objs);const box=document.createElement('div');
   if(!lg.length){box.textContent='';return box;}
+  const shipMap={};for(const o of objs){if(o.type==='arrow'&&(o.ship||0)>0){const fi=(o.formation==null?99:o.formation);(shipMap[fi]||(shipMap[fi]=new Set())).add(o.ship);}}
+  const comb=state.legendCombine||{};
   if(horiz)box.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax('+Math.round(fs*8.5)+'px,1fr));gap:'+Math.round(fs*0.4)+'px '+Math.round(fs*0.9)+'px;align-content:flex-start;background:rgba(255,255,255,.97);border-radius:7px;box-sizing:border-box;padding:'+Math.round(fs*0.4)+'px';
   else box.style.cssText='display:flex;flex-direction:column;gap:'+Math.max(2,Math.round(fs*0.4))+'px;background:rgba(255,255,255,.97);border-radius:6px;box-sizing:border-box;padding:'+Math.round(fs*0.3)+'px';
   lg.forEach(e=>{const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:'+Math.round(fs*0.45)+'px;font-family:\"Courier New\",monospace;font-size:'+fs+'px;color:#111;line-height:1.1;white-space:nowrap';
@@ -683,6 +692,13 @@ function legendEl(objs,fs,horiz){fs=fs||14;const lg=presLegend(objs);const box=d
     const cs=document.createElement('span');cs.style.cssText='font-weight:800';cs.textContent=e.cs;
     row.append(sw,cs);
     if(e.alt){const al=document.createElement('span');al.style.cssText='font-weight:800;color:'+(e.blue?'#1763d6':'#cf1a1a');al.textContent=e.alt;row.append(al);}
+    const canCombine=((shipMap[e.fi]&&shipMap[e.fi].size>1)||!!comb[e.fi]);
+    if(interactive&&canCombine){row.style.cursor='pointer';
+      const hint=document.createElement('span');hint.textContent=comb[e.fi]?'⊟':'⊞';hint.style.cssText='opacity:.45;font-weight:700;margin-left:'+Math.round(fs*0.2)+'px';row.append(hint);
+      row.addEventListener('pointerdown',ev=>ev.stopPropagation());
+      row.addEventListener('click',ev=>{ev.stopPropagation();const fname=(((state.formations[e.fi]||{}).name)||e.cs).toUpperCase();const willCombine=!comb[e.fi];
+        const lc=Object.assign({},state.legendCombine);if(willCombine)lc[e.fi]=true;else delete lc[e.fi];state.legendCombine=lc;
+        persist();flash((willCombine?'Combined ':'Split ')+fname);renderShow();});}
     box.appendChild(row);});
   return box;}
 function drawFrame(inner,spec){
@@ -757,7 +773,7 @@ function renderShow(){scene.innerHTML="";const labelH=64,gap=90,side=W;
     bdg.addEventListener('pointerdown',e=>e.stopPropagation());
     bdg.addEventListener('click',e=>{e.stopPropagation();toggleCardFrame(fr);});
     scene.appendChild(bdg);});
-  if(legOn){const lg=legendEl(curCard().objects,Math.round(side*0.022),true);lg.style.position='absolute';lg.style.left='0';lg.style.top=(labelH+side+legGap)+'px';lg.style.width=scW+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';scene.appendChild(lg);}
+  if(legOn){const lg=legendEl(curCard().objects,Math.round(side*0.022),true,true);lg.style.position='absolute';lg.style.left='0';lg.style.top=(labelH+side+legGap)+'px';lg.style.width=scW+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';scene.appendChild(lg);}
   staticMode=false;renderShowHud();}
 function renderShowHud(){const hud=$('showHud');if(!hud)return;
   const n=lmode(),roman=['','I','II','III'][n]||'I',card=curCard(),objs=(card&&card.objects)||state.objects||[];
@@ -1186,7 +1202,7 @@ $('masterAddF').onclick=()=>{if(state.formations.length>=8)return;state.formatio
 $('masterAltBtn').onclick=openAltEditor;
 function clearMission(){if(!confirm('Wipe this entire mission and start fresh? This removes all presentations, arrows, formations, altitude blocks, and settings.'))return;
   state.defaultAngle=180;state.active=0;state.fightAxis=null;state.layoutMode=1;state.scaleNM=25;state.mission=null;state.perPage=2;
-  state.formations=[{color:PALETTE[0],name:'MIG',ships:4}];state.redAlts=[];state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
+  state.formations=[{color:PALETTE[0],name:'MIG',ships:4}];state.redAlts=[];state.legendCombine={};state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
   state.cards=[{name:'Alpha',title:'',objects:[]}];state.cur=0;state.title='';state.selected=null;
   state.objects=state.cards[0].objects;ensureScaleDefaults();
   loadCard(0);fitZoom();persist();flash('Mission cleared');openMaster();}
@@ -1240,7 +1256,7 @@ $('canvasWrap').addEventListener('pointerdown',e=>{const showPan=state.showMode&
 
 /* ============ SAVE / LOAD / PRINT / CLEAR ============ */
 function applyLoaded(d){
-  const ns={defaultAngle:d.defaultAngle||180,active:d.active||0,zoom:1,tx:0,ty:0,turnDir:-1,showMode:false,perPage:d.perPage||2,layoutMode:d.layoutMode||1,scaleNM:d.scaleNM||25,fightAxis:(d.fightAxis==null?null:d.fightAxis),mission:d.mission||null,showLegend:d.showLegend!==false,showGroupAlt:d.showGroupAlt!==false,formations:d.formations||[],redAlts:Array.isArray(d.redAlts)?d.redAlts:[],tanker:Object.assign({on:false,cs:'',arct:'',track:'',alt:'',offload:''},d.tanker||{}),points:Array.isArray(d.points)?d.points:[],notesLeft:(d.notesLeft&&Array.isArray(d.notesLeft.items))?d.notesLeft:{items:[]},notesRight:(d.notesRight&&Array.isArray(d.notesRight.items))?d.notesRight:{items:[]},cards:d.cards,cur:d.cur||0,selected:null};
+  const ns={defaultAngle:d.defaultAngle||180,active:d.active||0,zoom:1,tx:0,ty:0,turnDir:-1,showMode:false,perPage:d.perPage||2,layoutMode:d.layoutMode||1,scaleNM:d.scaleNM||25,fightAxis:(d.fightAxis==null?null:d.fightAxis),mission:d.mission||null,showLegend:d.showLegend!==false,showGroupAlt:d.showGroupAlt!==false,legendCombine:(d.legendCombine&&typeof d.legendCombine==="object")?d.legendCombine:{},formations:d.formations||[],redAlts:Array.isArray(d.redAlts)?d.redAlts:[],tanker:Object.assign({on:false,cs:'',arct:'',track:'',alt:'',offload:''},d.tanker||{}),points:Array.isArray(d.points)?d.points:[],notesLeft:(d.notesLeft&&Array.isArray(d.notesLeft.items))?d.notesLeft:{items:[]},notesRight:(d.notesRight&&Array.isArray(d.notesRight.items))?d.notesRight:{items:[]},cards:d.cards,cur:d.cur||0,selected:null};
   if(!ns.cards||!ns.cards.length){ns.cards=[{name:'Alpha',title:d.title||'',objects:d.objects||[]}];ns.cur=0;}
   ns.cards.forEach(c=>{if(!Array.isArray(c.objects))c.objects=[];});
   if(!ns.formations.length)ns.formations=[{color:PALETTE[0],name:'A',ships:1}];
@@ -1251,7 +1267,7 @@ function applyLoaded(d){
 }
 let _saveT=null;
 function persist(){try{if(_saveT)clearTimeout(_saveT);}catch(_){}
-  _saveT=setTimeout(()=>{try{localStorage.setItem('dca_coord_card',JSON.stringify({defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,mission:state.mission,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,cards:state.cards,cur:state.cur}));}catch(_){}},400);}
+  _saveT=setTimeout(()=>{try{localStorage.setItem('dca_coord_card',JSON.stringify({defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,mission:state.mission,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,cards:state.cards,cur:state.cur}));}catch(_){}},400);}
 function tryRestore(){let s=null;try{s=localStorage.getItem('dca_coord_card');}catch(_){return false;}if(!s)return false;
   let d;try{d=JSON.parse(s);}catch(_){return false;}if(!d||(!d.cards&&!d.objects))return false;applyLoaded(d);return true;}
 
@@ -1263,7 +1279,7 @@ function ensureMission(){if(!state.mission)state.mission=defaultMission();return
 function pad2(n){return ('0'+n).slice(-2);}
 function missionBase(m){return m.date+'_'+m.ampm+'_'+(MTYPE_TOKEN[m.type]||m.type);}
 function missionName(m){return missionBase(m)+'_v'+pad2(m.version);}
-function serializableState(){return {defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,cards:state.cards,cur:state.cur};}
+function serializableState(){return {defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,cards:state.cards,cur:state.cur};}
 function buildMissionObj(){return {app:'RedPlanningTool',fmt:1,mission:Object.assign({},ensureMission()),savedAt:new Date().toISOString(),state:serializableState()};}
 function msIndex(){try{return JSON.parse(localStorage.getItem('rpt_missions')||'[]');}catch(_){return [];}}
 function msSetIndex(a){try{localStorage.setItem('rpt_missions',JSON.stringify(a));}catch(_){}}
