@@ -200,7 +200,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v83</div>
+  <div id="setupVer">Red Planning Tool v84</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -249,7 +249,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v83</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v84</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -1408,12 +1408,12 @@ function openNotesEditor(side){
   const done=document.createElement('button');done.className='btn';done.style.flex='0 0 auto';done.textContent='Done';done.onclick=()=>{ov.remove();if($('masterBrief'))renderMasterBrief();};
   ctr.append(add,done);card.appendChild(ctr);
   ov.appendChild(card);document.body.appendChild(ov);}
-const PRINT_FIT=0.89; // shrink so the card clears iOS Safari's forced margins + header/footer and stays on ONE landscape page
-function buildPageFor(group){
-  const SW=1032,SH=792,HALF=SW/2,PAD=12,PW=SW+2*PAD,FULLH=SH+2*PAD,S=PRINT_FIT;
-  const page=document.createElement('div');page.className='print-page';page.style.width=PW+'px';page.style.height=Math.round(FULLH*S)+'px';
-  const scaler=document.createElement('div');scaler.style.cssText='position:absolute;left:'+Math.round((PW-PW*S)/2)+'px;top:0;width:'+PW+'px;height:'+FULLH+'px;transform:scale('+S+');transform-origin:top left';page.appendChild(scaler);
-  const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';scaler.appendChild(content);
+const PRINT_H=726; // browser-print page height in px: short enough to clear iOS Safari's footer band and stay on ONE page, while using the FULL 11in width. Export PDF passes 816 (full 8.5in).
+function buildPageFor(group,fullH){
+  fullH=fullH||816;
+  const PW=1056,PAD=12,SW=PW-2*PAD,SH=fullH-2*PAD,HALF=SW/2;
+  const page=document.createElement('div');page.className='print-page';page.style.width=PW+'px';page.style.height=fullH+'px';
+  const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';page.appendChild(content);
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';content.appendChild(fold);
   const notesH=Math.round(SH*0.33),lNotes=notesActive('left'),rNotes=notesActive('right'),notesY=SH-notesH;
   const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+(lNotes?(notesY-12):SH)+'px;padding:46px 40px;box-sizing:border-box;overflow:hidden';
@@ -1430,19 +1430,80 @@ function buildPageFor(group){
 }
 function buildPages(scaled){
   const sheet=$('printSheet');sheet.innerHTML='';
-  const PW=1056,PH=Math.round(816*PRINT_FIT);
+  const PW=1056,PH=PRINT_H;
   const pv=scaled?Math.min(1,(window.innerWidth-24)/PW):1;
   const m=lmode(),per=m===1?6:2;
-  for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);const page=buildPageFor(group);
+  for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);const page=buildPageFor(group,PRINT_H);
     if(scaled){const h=document.createElement('div');h.className='pageholder';h.style.width=(PW*pv)+'px';h.style.height=(PH*pv)+'px';page.style.transform='scale('+pv+')';page.style.transformOrigin='top left';h.appendChild(page);sheet.appendChild(h);}
     else sheet.appendChild(page);}
+}
+/* ===== Bulletproof PDF export: build full-size 11x8.5 pages, rasterize each (via SVG foreignObject) and assemble a real PDF file — no browser print, so NO URL/date footer and NO page spill. Falls back to native print if the OS blocks canvas export. ===== */
+function _collectCSS(){return Array.from(document.querySelectorAll('style')).map(s=>s.textContent).join('\n');}
+function _pageToImg(node,w,h,scale){return new Promise((res,rej)=>{
+  let xml;try{xml=new XMLSerializer().serializeToString(node);}catch(e){return rej(e);}
+  const css=_collectCSS();
+  const svg="<svg xmlns='http://www.w3.org/2000/svg' width='"+w+"' height='"+h+"'>"
+    +"<foreignObject x='0' y='0' width='"+w+"' height='"+h+"'>"
+    +"<div xmlns='http://www.w3.org/1999/xhtml' style='width:"+w+"px;height:"+h+"px;background:#ffffff'>"
+    +"<style>"+css+"</style>"+xml+"</div></foreignObject></svg>";
+  const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  const img=new Image();
+  img.onload=()=>{const c=document.createElement('canvas');c.width=Math.round(w*scale);c.height=Math.round(h*scale);
+    const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.setTransform(scale,0,0,scale,0,0);ctx.drawImage(img,0,0);
+    let durl;try{durl=c.toDataURL('image/jpeg',0.95);}catch(e){return rej(e);} // SecurityError here => OS tainted the canvas
+    res({durl:durl,pw:c.width,ph:c.height});};
+  img.onerror=()=>rej(new Error('render failed'));
+  img.src=url;
+});}
+function _b64u8(b64){const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+function _buildPdf(imgs){ // imgs:[{jpeg:Uint8Array,pw,ph}] one full 11x8.5 landscape page each
+  const Wpt=792,Hpt=612,enc=new TextEncoder();const parts=[];let off=0;const xref=[];
+  const push=x=>{const u=(typeof x==='string')?enc.encode(x):x;parts.push(u);off+=u.length;};
+  const mark=n=>{xref[n]=off;};
+  push('%PDF-1.4\n%\u00FF\u00FF\u00FF\u00FF\n');
+  const N=imgs.length,maxId=2+3*N;
+  mark(1);push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  let kids='';for(let p=0;p<N;p++)kids+=(3+p*3)+' 0 R ';
+  mark(2);push('2 0 obj\n<< /Type /Pages /Kids ['+kids.trim()+'] /Count '+N+' >>\nendobj\n');
+  for(let p=0;p<N;p++){const pg=3+p*3,ct=pg+1,im=pg+2,J=imgs[p];
+    mark(pg);push(pg+' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+Wpt+' '+Hpt+'] /Resources << /XObject << /Im0 '+im+' 0 R >> >> /Contents '+ct+' 0 R >>\nendobj\n');
+    const cs='q '+Wpt+' 0 0 '+Hpt+' 0 0 cm /Im0 Do Q';
+    mark(ct);push(ct+' 0 obj\n<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream\nendobj\n');
+    mark(im);push(im+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+J.pw+' /Height '+J.ph+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+J.jpeg.length+' >>\nstream\n');
+    push(J.jpeg);push('\nendstream\nendobj\n');}
+  const xs=off;let x='xref\n0 '+(maxId+1)+'\n0000000000 65535 f \n';
+  for(let i=1;i<=maxId;i++)x+=String(xref[i]||0).padStart(10,'0')+' 00000 n \n';
+  push(x);push('trailer\n<< /Size '+(maxId+1)+' /Root 1 0 R >>\nstartxref\n'+xs+'\n%%EOF\n');
+  let len=0;for(const c of parts)len+=c.length;const out=new Uint8Array(len);let o=0;for(const c of parts){out.set(c,o);o+=c.length;}
+  return new Blob([out],{type:'application/pdf'});
+}
+async function exportPDF(btn){
+  const old=btn?btn.textContent:'';if(btn){btn.textContent='Building…';btn.disabled=true;}
+  const holder=document.createElement('div');holder.style.cssText='position:fixed;left:-99999px;top:0;background:#fff';document.body.appendChild(holder);
+  try{
+    const m=lmode(),per=m===1?6:2,R=3,imgs=[];
+    if(!state.cards.length){flash('No cards to export');return;}
+    for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);
+      const page=buildPageFor(group,816);holder.appendChild(page);
+      const r=await _pageToImg(page,1056,816,R);
+      imgs.push({jpeg:_b64u8(r.durl.split(',')[1]),pw:r.pw,ph:r.ph});
+      holder.removeChild(page);}
+    const blob=_buildPdf(imgs);const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='DCA Coord Card.pdf';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),6000);
+    flash('PDF exported — check your downloads / share sheet');
+  }catch(e){console.error('PDF export',e);
+    flash('This browser blocked direct export — opening Print instead');
+    setTimeout(()=>{try{closePreview();}catch(_){}doNativePrint();},700);
+  }finally{holder.remove();if(btn){btn.textContent=old;btn.disabled=false;}}
 }
 let _prevBar=null;
 function openPreview(){closeSheets();buildPages(true);$('printSheet').classList.add('preview');
   if(!_prevBar){_prevBar=document.createElement('div');_prevBar.className='preview-bar';
-    const close=document.createElement('button');close.className='btn';close.style.flex='0 0 auto';close.textContent='✕ Close';close.onclick=closePreview;
-    const pr=document.createElement('button');pr.className='btn primary';pr.style.flex='1';pr.textContent='Print / Save PDF';pr.onclick=doNativePrint;
-    _prevBar.append(close,pr);document.body.appendChild(_prevBar);}
+    const close=document.createElement('button');close.className='btn';close.style.flex='0 0 auto';close.textContent='✕';close.onclick=closePreview;
+    const pdf=document.createElement('button');pdf.className='btn primary';pdf.style.flex='1';pdf.textContent='⬇ Export PDF';pdf.onclick=()=>exportPDF(pdf);
+    const pr=document.createElement('button');pr.className='btn';pr.style.flex='1';pr.textContent='Print';pr.onclick=doNativePrint;
+    _prevBar.append(close,pdf,pr);document.body.appendChild(_prevBar);}
   _prevBar.style.display='flex';}
 function closePreview(){$('printSheet').classList.remove('preview');$('printSheet').innerHTML='';if(_prevBar)_prevBar.style.display='none';}
 function doNativePrint(){buildPages(false);$('printSheet').classList.remove('preview');if(_prevBar)_prevBar.style.display='none';
