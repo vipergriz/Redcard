@@ -39,7 +39,7 @@
 </head>
 <body>
 <header>
-  <div class="kicker">World Time &middot; v5</div>
+  <div class="kicker">World Time &middot; v6</div>
   <h1>WORLD TIME</h1>
 </header>
 <div class="list" id="list"></div>
@@ -99,6 +99,13 @@ function tick(){
 }
 tick();
 setInterval(tick, 1000);
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
