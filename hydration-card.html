@@ -85,7 +85,7 @@
 <body>
 <header>
   <div class="htext">
-    <div class="kicker">Hydration &middot; v4 &middot; ~165 lb</div>
+    <div class="kicker">Hydration &middot; v5 &middot; ~165 lb</div>
     <h1>WATER &amp; SALT &middot; GO</h1>
   </div>
   <button class="clear" id="clear">Clear</button>
@@ -125,8 +125,12 @@ const STATE={
   alc: {label:"Alcohol",      win:360, opener:"16 oz \u00b7 1/4 tsp", oz:14, ozLast:10, potassium:true},
 };
 
-let mode="now", state="hyd", useWake=true;
+const store={ get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}} };
+const KEY="hydration.session";
+let mode="now", state="hyd", useWake=true, lockedStart=null;
 let checks={};
+let _restored=null;
+(function(){ const s=store.get(KEY,null); if(s){ _restored=s; mode=s.mode||"now"; state=s.state||"hyd"; useWake=s.useWake!==false; lockedStart=(typeof s.lockedStart==="number")?s.lockedStart:null; checks=s.checks||{}; } })();
 
 const $=(id)=>document.getElementById(id);
 const modeSeg=$("modeSeg"), stateSeg=$("stateSeg"), planInputs=$("planInputs");
@@ -161,7 +165,8 @@ function compute(){
   const cfg=STATE[state];
   let start, go, night=[], nightTail="", includeNight=false, ctx="";
   if(mode==="now"){
-    start=snap5(nowMin());
+    if(lockedStart==null) lockedStart=snap5(nowMin());
+    start=lockedStart;
     go=start+cfg.win;
     ctx=`Start ${fmt(start)} \u00b7 ${cfg.label} \u00b7 go in ${(cfg.win/60).toFixed(1)} hr`;
   } else {
@@ -204,7 +209,7 @@ function appendRow(r, i){
   const row=document.createElement("div"); row.className="row"+(checks[i]?" done":"");
   const label=rowLabel(r.act, r.amt);
   row.innerHTML=`<div class="box"></div><div class="time">${fmt(r.t)}</div><div class="act">${label}</div><div class="amt">${r.amt}</div>`;
-  row.onclick=()=>{ checks[i]=!checks[i]; render(); };
+  row.onclick=()=>{ checks[i]=!checks[i]; save(); render(); };
   listEl.appendChild(row);
 }
 function appendTail(txt, night){ const t=document.createElement("div"); t.className="tail"+(night?" night":""); t.innerHTML=`<span>\u25B8</span><b>${txt}</b>`; listEl.appendChild(t); }
@@ -233,7 +238,8 @@ function render(){
   appendTail(p.morningTail);
 }
 
-function changed(){ checks={}; render(); }
+function save(){ store.set(KEY,{mode,state,useWake,lockedStart,checks,goVal:goIn.value,wakeVal:wakeIn.value}); }
+function changed(){ checks={}; if(mode==="now") lockedStart=snap5(nowMin()); save(); render(); }
 
 [...modeSeg.children].forEach(b=> b.onclick=()=>{ mode=b.dataset.v; changed(); });
 [...stateSeg.children].forEach(b=> b.onclick=()=>{ state=b.dataset.v; changed(); });
@@ -243,9 +249,12 @@ goIn.oninput=changed;
 wakeIn.oninput=changed;
 goIn.onchange=()=>{ const v=parseT(goIn.value); if(v!=null) goIn.value=toHHMM(snap15(v)); changed(); };
 wakeIn.onchange=()=>{ const v=parseT(wakeIn.value); if(v!=null) wakeIn.value=toHHMM(snap15(v)); changed(); };
-$("clear").onclick=()=>{ checks={}; render(); };
+$("clear").onclick=()=>{ checks={}; if(mode==="now") lockedStart=snap5(nowMin()); save(); render(); };
 
-goIn.value=toHHMM(snap15(nowMin()+240));
+if(_restored){ if(_restored.goVal) goIn.value=_restored.goVal; if(_restored.wakeVal) wakeIn.value=_restored.wakeVal; }
+if(!goIn.value) goIn.value=toHHMM(snap15(nowMin()+240));
+if(mode==="now" && lockedStart==null) lockedStart=snap5(nowMin());
+save();
 render();
 </script>
 </body>
