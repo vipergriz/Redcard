@@ -4,26 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#EEF1F4">
-<title>Hydration Card</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hydration">
+<title>Hydration</title>
 <style>
   :root{
     --bg:#EAEEF2; --card:#FFFFFF; --soft:#F3F6F9; --line:#D6DDE4;
     --ink:#111922; --sec:#3C4A57; --mute:#6A7783;
     --go:#0E8A4C; --goTint:#E4F4EB; --amber:#9A6500; --amberTint:#FBF1DD;
-    --salt:#1668A8; --night:#5A3FA0; --nightTint:#EEE9F8;
+    --salt:#1668A8; --night:#5A3FA0; --nightTint:#EEE9F8; --accent:#0E5FA8;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0; background:var(--bg)}
   body{
     color:var(--ink); font-family:var(--mono); font-size:14.5px; line-height:1.35;
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) 16px env(safe-area-inset-left);
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) 24px env(safe-area-inset-left);
     max-width:520px; margin:0 auto;
   }
-  header{padding:12px 16px 6px; display:flex; align-items:center; gap:12px}
+  header{padding:10px 16px 2px; display:flex; align-items:center; gap:12px}
   .htext{flex:1; min-width:0}
   .kicker{font-size:10px; letter-spacing:.22em; color:var(--mute); text-transform:uppercase; font-weight:700}
-  h1{font-size:17px; letter-spacing:.08em; margin:3px 0 0; font-weight:700; color:var(--ink)}
+  h1{font-size:17px; letter-spacing:.08em; margin:3px 0 0; font-weight:700}
   .clear{
     flex:none; padding:8px 14px; background:var(--card); color:var(--sec);
     border:1px solid var(--line); border-radius:9px; font-family:var(--mono);
@@ -31,64 +34,41 @@
   }
   .clear:active{background:var(--soft)}
 
-  .tabs{display:flex; gap:5px; padding:8px 16px 0}
-  .tab{
-    flex:1; text-align:center; padding:9px 3px; border:1px solid var(--line);
-    background:var(--soft); color:var(--sec); border-radius:10px 10px 0 0;
-    font-weight:700; letter-spacing:.04em; cursor:pointer; user-select:none;
-    border-bottom:none; font-size:12.5px;
-  }
-  .tab small{display:block; font-size:8px; letter-spacing:.06em; color:var(--mute); margin-top:2px; font-weight:700}
-  .tab.active{background:var(--card)}
-  .tab.active .tlabel{color:var(--go)}
-  .tab.active small{color:var(--sec)}
+  .seg{display:flex; gap:6px; padding:0 16px; margin-top:6px}
+  .opt{flex:1; padding:10px 4px; border:1px solid var(--line); background:var(--soft); color:var(--sec); border-radius:10px; font-family:var(--mono); font-size:12.5px; font-weight:700; letter-spacing:.03em; cursor:pointer}
+  .opt.on{background:var(--card); color:var(--ink); border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
 
-  .mode{display:flex; margin:0 16px; border:1px solid var(--line); border-top:none; background:var(--soft)}
-  .mode.hide{display:none}
-  .mbtn{
-    flex:1; text-align:center; padding:9px 4px; cursor:pointer; user-select:none;
-    font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--mute);
-    border-right:1px solid var(--line);
-  }
-  .mbtn:last-child{border-right:none}
-  .mbtn.on{background:var(--card); color:var(--ink)}
-  .mbtn.on.hero{color:var(--amber)}
-
-  .inputs{display:none; margin:0 16px; border:1px solid var(--line); border-top:none; background:var(--soft); padding:10px 12px; gap:10px}
-  .inputs.show{display:flex}
-  .inputs label{flex:1; display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--sec); text-transform:uppercase}
-  .inputs input{flex:1; font-family:var(--mono); font-size:15px; font-weight:700; color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:7px 8px; background:var(--card); min-width:0}
+  .pin{display:none; padding:6px 16px 0}
+  .pin.show{display:block}
+  .prow{display:flex; align-items:center; gap:10px; margin-top:6px}
+  .field{display:flex; align-items:center; gap:8px}
+  .prow .field{flex:none}
+  #wakeField{margin-top:6px}
+  .field label{flex:none; min-width:42px; font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--sec); text-transform:uppercase}
+  .field input{flex:none; width:130px; font-family:var(--mono); font-size:15px; font-weight:700; color:var(--ink); border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--card)}
+  .field.hide{display:none}
+  .nt{flex:none; margin-left:auto; display:flex; align-items:center; gap:6px}
+  .nt span{font-size:10px; font-weight:700; letter-spacing:.08em; color:var(--mute); text-transform:uppercase}
+  .mini{flex:none; padding:8px 12px; border:1px solid var(--line); background:var(--soft); color:var(--mute); border-radius:8px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.06em; cursor:pointer; text-transform:uppercase}
+  .mini.on{background:var(--accent); color:#fff; border-color:var(--accent)}
 
   .gobar{
-    margin:0 16px; padding:10px 16px; background:var(--goTint);
+    margin:10px 16px 0; padding:9px 16px; background:var(--goTint);
     border:1px solid var(--line); border-top:3px solid var(--go);
-    border-radius:0 0 12px 12px; display:flex; align-items:center; gap:10px;
+    border-radius:12px; display:flex; align-items:center; gap:10px;
   }
-  .gobar.hero{background:var(--amberTint); border-top-color:var(--amber)}
   .gobar .lbl{font-size:10px; letter-spacing:.2em; color:var(--sec); font-weight:700}
   .gobar .time{font-size:24px; font-weight:700; color:var(--go); letter-spacing:.02em}
-  .gobar.hero .time{color:var(--amber)}
   .gobar .win{margin-left:auto; font-size:11px; color:var(--sec); font-weight:700}
-
-  .note{padding:7px 16px 3px; color:var(--sec); font-size:11.5px; letter-spacing:.01em}
+  .note{padding:7px 16px 3px; color:var(--sec); font-size:11.5px}
 
   .list{margin:5px 16px 0; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden}
-  .shead{
-    padding:8px 13px 5px; font-size:9.5px; letter-spacing:.16em; font-weight:700;
-    color:var(--mute); text-transform:uppercase; border-top:1px solid var(--line); background:var(--soft);
-  }
+  .shead{padding:7px 13px 4px; font-size:9.5px; letter-spacing:.16em; font-weight:700; color:var(--mute); text-transform:uppercase; border-top:1px solid var(--line); background:var(--soft)}
   .shead:first-child{border-top:none}
   .shead.night{color:var(--night)}
-  .row{
-    display:flex; align-items:center; gap:10px; padding:9px 13px;
-    border-top:1px solid var(--line); cursor:pointer;
-  }
+  .row{display:flex; align-items:center; gap:10px; padding:8px 13px; border-top:1px solid var(--line); cursor:pointer}
   .row:first-child{border-top:none}
-  .box{
-    flex:none; width:21px; height:21px; border-radius:5px; border:1.5px solid #B7C1CB;
-    display:flex; align-items:center; justify-content:center; background:var(--card);
-    transition:.12s; font-size:13px; color:#fff; font-weight:700;
-  }
+  .box{flex:none; width:21px; height:21px; border-radius:5px; border:1.5px solid #B7C1CB; display:flex; align-items:center; justify-content:center; background:var(--card); transition:.12s; font-size:13px; color:#fff; font-weight:700}
   .row.done .box{background:var(--go); border-color:var(--go)}
   .box::after{content:"\2713"; opacity:0}
   .row.done .box::after{opacity:1}
@@ -97,12 +77,7 @@
   .row.done .act{color:var(--mute); text-decoration:line-through}
   .amt{flex:none; color:var(--salt); font-weight:700; white-space:nowrap; font-size:13px}
   .row.done .amt{color:#9AA7B2; text-decoration:line-through}
-
-  .tail{
-    display:flex; align-items:center; gap:8px; padding:10px 13px;
-    border-top:1px solid var(--line); background:var(--amberTint);
-    color:var(--amber); font-weight:700; font-size:12px;
-  }
+  .tail{display:flex; align-items:center; gap:8px; padding:9px 13px; border-top:1px solid var(--line); background:var(--amberTint); color:var(--amber); font-weight:700; font-size:12px}
   .tail.night{background:var(--nightTint); color:var(--night)}
   :focus-visible{outline:2px solid var(--go); outline-offset:2px}
 </style>
@@ -110,21 +85,31 @@
 <body>
 <header>
   <div class="htext">
-    <div class="kicker">Prehydration &middot; v1 &middot; ~165 lb</div>
+    <div class="kicker">Hydration &middot; v4 &middot; ~165 lb</div>
     <h1>WATER &amp; SALT &middot; GO</h1>
   </div>
   <button class="clear" id="clear">Clear</button>
 </header>
 
-<div class="tabs" id="tabs"></div>
-<div class="mode" id="modeBar">
-  <div class="mbtn" data-m="full" id="mFull">FULL</div>
-  <div class="mbtn hero" data-m="two" id="mTwo">2HR ZERO&rarr;HERO</div>
+<div class="seg" id="modeSeg">
+  <button class="opt on" data-v="now">Start now</button>
+  <button class="opt" data-v="plan">Plan go time</button>
 </div>
-<div class="inputs" id="inputs">
-  <label>Wake <input type="time" id="wakeIn" value="06:00" step="900"></label>
-  <label>Go <input type="time" id="goIn" value="09:00" step="900"></label>
+
+<div class="pin" id="planInputs">
+  <div class="prow">
+    <div class="field"><label>Go</label><input type="time" id="goIn" step="900"></div>
+    <div class="nt"><span>Night</span><button class="mini" id="wakeOff">Off</button><button class="mini on" id="wakeOn">On</button></div>
+  </div>
+  <div class="field" id="wakeField"><label>Wake</label><input type="time" id="wakeIn" step="900" value="06:00"></div>
 </div>
+
+<div class="seg" id="stateSeg">
+  <button class="opt on" data-v="hyd">Hydrated</button>
+  <button class="opt" data-v="mild">Mild deficit</button>
+  <button class="opt" data-v="alc">Alcohol</button>
+</div>
+
 <div class="gobar" id="gobar">
   <span class="lbl">GO</span>
   <span class="time" id="goTime">&mdash;</span>
@@ -134,206 +119,133 @@
 <div class="list" id="list"></div>
 
 <script>
-const PLANS = {
-  A:{ label:"A", sub:"EUHYD",
-    full:{ go:"12:00 PM", win:"4.0 hr", note:"Topping off \u2014 bed at good hydration.",
-      tail:"Sip only after 11:00 \u2192 empty bladder before GO.",
-      rows:[
-        {t:"8:00", amt:"12 oz \u00b7 1/8 tsp"},
-        {t:"8:20", act:"Coffee", amt:"12 oz"},
-        {t:"9:30", amt:"12 oz \u00b7 pinch"},
-        {t:"10:30", amt:"10 oz \u00b7 1/8 tsp"},
-        {t:"11:00", amt:"8 oz"},
-      ]},
-    two:{ go:"10:00 AM", win:"2.0 hr", note:"Fast top-off \u2014 you started clean.",
-      tail:"Sip only after 9:30 \u2192 empty bladder before GO.",
-      rows:[
-        {t:"8:00", amt:"14 oz \u00b7 1/8 tsp"},
-        {t:"8:15", act:"Coffee", amt:"12 oz"},
-        {t:"9:00", amt:"12 oz \u00b7 1/8 tsp"},
-        {t:"9:30", amt:"8 oz \u00b7 pinch"},
-      ]}
-  },
-  B:{ label:"B", sub:"MILD",
-    full:{ go:"12:30 PM", win:"4.5 hr", note:"Mild deficit \u2014 catching up.",
-      tail:"Sip only after 11:45 \u2192 empty bladder before GO.",
-      rows:[
-        {t:"8:00", amt:"14 oz \u00b7 1/4 tsp"},
-        {t:"8:25", act:"Coffee", amt:"12 oz"},
-        {t:"9:30", amt:"12 oz \u00b7 1/8 tsp"},
-        {t:"10:30", amt:"12 oz \u00b7 1/8 tsp"},
-        {t:"11:15", amt:"10 oz \u00b7 pinch"},
-        {t:"11:45", amt:"6 oz"},
-      ]},
-    two:{ go:"10:00 AM", win:"2.0 hr", note:"Compressed \u2014 front-loaded salt.",
-      tail:"Sip only after 9:25 \u2192 empty bladder before GO.",
-      rows:[
-        {t:"8:00", amt:"16 oz \u00b7 1/4 tsp"},
-        {t:"8:15", act:"Coffee", amt:"12 oz"},
-        {t:"8:55", amt:"14 oz \u00b7 1/8 tsp"},
-        {t:"9:25", amt:"10 oz \u00b7 1/8 tsp"},
-      ]}
-  },
-  C:{ label:"C", sub:"ALC",
-    full:{ go:"2:00 PM", win:"6.0 hr", note:"Moderate + alcohol. Add potassium early: banana or salted toast.",
-      tail:"Sip only after 1:00 \u2192 empty bladder before GO.",
-      rows:[
-        {t:"8:00", amt:"16 oz \u00b7 1/4 tsp"},
-        {t:"8:30", act:"Coffee", amt:"12 oz"},
-        {t:"9:30", amt:"16 oz \u00b7 1/8 tsp"},
-        {t:"10:45", amt:"14 oz \u00b7 1/4 tsp"},
-        {t:"12:00", amt:"12 oz \u00b7 1/8 tsp"},
-        {t:"1:00", amt:"10 oz \u00b7 1/8 tsp"},
-      ]},
-    two:{ go:"10:00 AM", win:"2.0 hr", note:"Hardest case. Add potassium now: banana or salted toast.",
-      tail:"Sip only after 9:25 \u2192 empty bladder before GO.",
-      rows:[
-        {t:"8:00", amt:"16 oz \u00b7 1/4 tsp"},
-        {t:"8:25", act:"Coffee", amt:"12 oz"},
-        {t:"8:50", amt:"16 oz \u00b7 1/4 tsp"},
-        {t:"9:25", amt:"12 oz \u00b7 1/8 tsp"},
-      ]}
-  }
+const STATE={
+  hyd: {label:"Hydrated",     win:240, opener:"12 oz \u00b7 1/8 tsp", oz:12, ozLast:8,  potassium:false},
+  mild:{label:"Mild deficit", win:270, opener:"14 oz \u00b7 1/4 tsp", oz:12, ozLast:10, potassium:false},
+  alc: {label:"Alcohol",      win:360, opener:"16 oz \u00b7 1/4 tsp", oz:14, ozLast:10, potassium:true},
 };
 
-let cur="A", mode="full";
-const state={};
-const tabsEl=document.getElementById("tabs");
-const listEl=document.getElementById("list");
-const modeBar=document.getElementById("modeBar");
-const inputsEl=document.getElementById("inputs");
-const gobar=document.getElementById("gobar");
-const goTimeEl=document.getElementById("goTime");
-const goWinEl=document.getElementById("goWin");
-const noteEl=document.getElementById("note");
-const wakeIn=document.getElementById("wakeIn");
-const goIn=document.getElementById("goIn");
+let mode="now", state="hyd", useWake=true;
+let checks={};
 
-function key(){ return cur==="PLAN" ? "PLAN" : cur+"_"+mode; }
-function getState(){ const k=key(); if(!state[k]) state[k]={}; return state[k]; }
+const $=(id)=>document.getElementById(id);
+const modeSeg=$("modeSeg"), stateSeg=$("stateSeg"), planInputs=$("planInputs");
+const goIn=$("goIn"), wakeIn=$("wakeIn"), wakeField=$("wakeField"), wakeOff=$("wakeOff"), wakeOn=$("wakeOn");
+const goTimeEl=$("goTime"), goWinEl=$("goWin"), noteEl=$("note"), listEl=$("list");
 
-function fmt(min){
-  min=((Math.round(min)%1440)+1440)%1440;
-  let h=Math.floor(min/60), m=min%60;
-  const ap=h>=12?"PM":"AM"; let hh=h%12; if(hh===0)hh=12;
-  return `${hh}:${m.toString().padStart(2,"0")} ${ap}`;
-}
+function fmt(min){ min=((Math.round(min)%1440)+1440)%1440; let h=Math.floor(min/60), m=min%60; const ap=h>=12?"PM":"AM"; let hh=h%12; if(hh===0)hh=12; return `${hh}:${m.toString().padStart(2,"0")} ${ap}`; }
 function parseT(v){ if(!v) return null; const [h,m]=v.split(":").map(Number); return h*60+m; }
-function snap15(min){ return Math.round(min/15)*15; }
 function toHHMM(min){ min=((Math.round(min)%1440)+1440)%1440; const h=Math.floor(min/60), m=min%60; return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`; }
-function rowLabel(act, amt){
-  if(act && /coffee/i.test(act)) return "Coffee";
-  if(amt && /(tsp|pinch)/i.test(amt)) return "Salt water";
-  return "Water";
-}
+function snap15(m){ return Math.round(m/15)*15; }
+function snap5(m){ return Math.round(m/5)*5; }
+function nowMin(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
+function rowLabel(act, amt){ if(act && /coffee/i.test(act)) return "Coffee"; if(amt && /(tsp|pinch)/i.test(amt)) return "Salt water"; return "Water"; }
 
-const TABS=[{k:"A",s:"EUHYD"},{k:"B",s:"MILD"},{k:"C",s:"ALC"},{k:"PLAN",s:"WAKE\u2192GO"}];
-function renderTabs(){
-  tabsEl.innerHTML="";
-  TABS.forEach(({k,s})=>{
-    const d=document.createElement("div");
-    d.className="tab"+(k===cur?" active":"");
-    d.innerHTML=`<span class="tlabel">${k}</span><small>${s}</small>`;
-    d.onclick=()=>{cur=k; render();};
-    tabsEl.appendChild(d);
-  });
-}
-
-function appendHead(txt, night){
-  const h=document.createElement("div"); h.className="shead"+(night?" night":""); h.textContent=txt; listEl.appendChild(h);
-}
-function appendRow(r, i, st){
-  const row=document.createElement("div");
-  row.className="row"+(st[i]?" done":"");
-  const label=rowLabel(r.act, r.amt);
-  const tt=(typeof r.t==="number")?fmt(r.t):r.t;
-  row.innerHTML=`<div class="box"></div><div class="time">${tt}</div><div class="act">${label}</div><div class="amt">${r.amt}</div>`;
-  row.onclick=()=>{ st[i]=!st[i]; render(); };
-  listEl.appendChild(row);
-}
-function appendTail(txt, night){
-  const t=document.createElement("div"); t.className="tail"+(night?" night":"");
-  t.innerHTML=`<span>\u25B8</span><b>${txt}</b>`; listEl.appendChild(t);
-}
-
-function buildPlan(wake, go){
-  const window=go-wake;
-  const o={window, wake, go, bed:wake-510, includeNight:false, night:[], morning:[], nightTail:"", morningTail:"", error:null};
-  if(window<=0){ o.error="Go time must be after wake."; return o; }
-  o.includeNight = window < 300;
+function buildMorning(start, go, cfg){
   const M=[];
-  M.push({t:wake, amt:"14 oz \u00b7 1/4 tsp"});
-  M.push({t:wake+20, act:"Coffee", amt:"12 oz"});
+  M.push({t:start, amt:cfg.opener});
+  M.push({t:start+20, act:"Coffee", amt:"12 oz"});
   const lastDrink=go-45;
-  let t=wake+80; const waters=[];
-  while(t <= lastDrink-25){ waters.push(t); t+=70; }
+  let t=start+80; const waters=[];
+  while(t<=lastDrink-25){ waters.push(t); t+=70; }
   waters.forEach((wt,i)=>{
     const salted = i < Math.ceil(waters.length/2);
-    const oz = (i < waters.length-1) ? 12 : 10;
+    const oz = (i<waters.length-1)?cfg.oz:cfg.ozLast;
     M.push({t:wt, amt: salted?`${oz} oz \u00b7 1/8 tsp`:`${oz} oz`});
   });
-  if(lastDrink >= wake+40){ M.push({t:lastDrink, amt:"6 oz"}); }
-  o.morning=M;
-  o.morningTail=`Sip only after ${fmt(lastDrink>=wake+40?lastDrink:go)} \u2192 empty bladder before GO.`;
-  if(o.includeNight){
-    const bed=o.bed;
-    o.night=[
-      {t:bed-240, amt:"14 oz \u00b7 1/8 tsp"},
-      {t:bed-180, amt:"10 oz"},
-      {t:bed-120, amt:"8 oz \u00b7 pinch"},
-    ];
-    o.nightTail=`Last sip by ${fmt(bed-120)} \u2014 2 hr before bed \u2192 pee before sleep, less night waking.`;
-  }
-  return o;
+  if(lastDrink>=start+40) M.push({t:lastDrink, amt:"6 oz"});
+  return {steps:M, lastDrink};
 }
+
+function compute(){
+  const cfg=STATE[state];
+  let start, go, night=[], nightTail="", includeNight=false, ctx="";
+  if(mode==="now"){
+    start=snap5(nowMin());
+    go=start+cfg.win;
+    ctx=`Start ${fmt(start)} \u00b7 ${cfg.label} \u00b7 go in ${(cfg.win/60).toFixed(1)} hr`;
+  } else {
+    const gv=parseT(goIn.value);
+    if(gv==null) return {error:"Set a go time."};
+    go=snap15(gv);
+    if(useWake){
+      const wv=parseT(wakeIn.value);
+      if(wv==null) return {error:"Set a wake time."};
+      const wake=snap15(wv);
+      if(go<=wake) return {error:"Go time must be after wake."};
+      start=wake;
+      const bed=wake-510, window=go-wake;
+      includeNight = window<300;
+      if(includeNight){
+        night=[
+          {t:bed-240, amt:"14 oz \u00b7 1/8 tsp"},
+          {t:bed-180, amt:"10 oz"},
+          {t:bed-120, amt:"8 oz \u00b7 pinch"},
+        ];
+        nightTail=`Last sip by ${fmt(bed-120)} \u2014 2 hr before bed \u2192 pee before sleep, less night waking.`;
+        ctx=`Bed ${fmt(bed)} (8.5 hr) \u00b7 wake ${fmt(wake)} \u00b7 night-prior included`;
+      } else {
+        ctx=`Wake ${fmt(wake)} \u00b7 morning-only \u2014 window \u22655 hr`;
+      }
+    } else {
+      start=go-cfg.win;
+      ctx=`Start ${fmt(start)} \u00b7 ${cfg.label} \u00b7 backward-planned`;
+    }
+  }
+  const {steps:morning, lastDrink}=buildMorning(start, go, cfg);
+  const morningTail=`Sip only after ${fmt(lastDrink>=start+40?lastDrink:go)} \u2192 empty bladder before GO.`;
+  let note=ctx;
+  if(cfg.potassium) note += " \u00b7 add potassium early (banana / salted toast)";
+  return {go, start, night, nightTail, includeNight, morning, morningTail, note};
+}
+
+function appendHead(txt, night){ const h=document.createElement("div"); h.className="shead"+(night?" night":""); h.textContent=txt; listEl.appendChild(h); }
+function appendRow(r, i){
+  const row=document.createElement("div"); row.className="row"+(checks[i]?" done":"");
+  const label=rowLabel(r.act, r.amt);
+  row.innerHTML=`<div class="box"></div><div class="time">${fmt(r.t)}</div><div class="act">${label}</div><div class="amt">${r.amt}</div>`;
+  row.onclick=()=>{ checks[i]=!checks[i]; render(); };
+  listEl.appendChild(row);
+}
+function appendTail(txt, night){ const t=document.createElement("div"); t.className="tail"+(night?" night":""); t.innerHTML=`<span>\u25B8</span><b>${txt}</b>`; listEl.appendChild(t); }
+
+function setSeg(seg, val){ [...seg.children].forEach(b=> b.classList.toggle("on", b.dataset.v===val)); }
 
 function render(){
-  renderTabs();
-  const isPlan = cur==="PLAN";
-  modeBar.classList.toggle("hide", isPlan);
-  inputsEl.classList.toggle("show", isPlan);
-  gobar.classList.toggle("hero", !isPlan && mode==="two");
+  setSeg(modeSeg, mode); setSeg(stateSeg, state);
+  planInputs.classList.toggle("show", mode==="plan");
+  wakeOff.classList.toggle("on", !useWake); wakeOn.classList.toggle("on", useWake);
+  wakeField.classList.toggle("hide", !(mode==="plan" && useWake));
   listEl.innerHTML="";
-
-  if(isPlan){ renderPlan(); return; }
-
-  document.getElementById("mFull").classList.toggle("on",mode==="full");
-  document.getElementById("mTwo").classList.toggle("on",mode==="two");
-  const p=PLANS[cur][mode];
-  goTimeEl.textContent=p.go; goWinEl.textContent=p.win; noteEl.textContent=p.note;
-  const st=getState(); let idx=0;
-  p.rows.forEach(r=> appendRow(r, idx++, st));
-  appendTail(p.tail);
-}
-
-function renderPlan(){
-  let wake=parseT(wakeIn.value), go=parseT(goIn.value);
-  if(wake==null||go==null){ goTimeEl.textContent="\u2014"; goWinEl.textContent=""; noteEl.textContent="Enter wake and go times."; return; }
-  wake=snap15(wake); go=snap15(go);
-  const p=buildPlan(wake,go);
-  goTimeEl.textContent=fmt(go);
-  goWinEl.textContent=(p.window/60).toFixed(1)+" hr";
-  if(p.error){ noteEl.textContent=p.error; return; }
-  noteEl.textContent=`Bed ${fmt(p.bed)} (8.5 hr) \u00b7 start "B" \u00b7 ${p.includeNight?"night-prior included":"morning-only \u2014 window \u22655 hr"}`;
-  const st=getState(); let idx=0;
+  const p=compute();
+  if(p.error){ goTimeEl.textContent="\u2014"; goWinEl.textContent=""; noteEl.textContent=p.error; return; }
+  goTimeEl.textContent=fmt(p.go);
+  goWinEl.textContent=((p.go-p.start)/60).toFixed(1)+" hr";
+  noteEl.textContent=p.note;
+  let idx=0;
   if(p.includeNight){
     appendHead("Night prior", true);
-    p.night.forEach(r=> appendRow(r, idx++, st));
+    p.night.forEach(r=>appendRow(r, idx++));
     appendTail(p.nightTail, true);
     appendHead("Morning", false);
   }
-  p.morning.forEach(r=> appendRow(r, idx++, st));
+  p.morning.forEach(r=>appendRow(r, idx++));
   appendTail(p.morningTail);
 }
 
-document.getElementById("mFull").onclick=()=>{mode="full"; render();};
-document.getElementById("mTwo").onclick=()=>{mode="two"; render();};
-document.getElementById("clear").onclick=()=>{state[key()]={}; render();};
-function snapField(el){ const v=parseT(el.value); if(v!=null) el.value=toHHMM(snap15(v)); }
-wakeIn.oninput=()=>{ state["PLAN"]={}; render(); };
-goIn.oninput=()=>{ state["PLAN"]={}; render(); };
-wakeIn.onchange=()=>{ snapField(wakeIn); state["PLAN"]={}; render(); };
-goIn.onchange=()=>{ snapField(goIn); state["PLAN"]={}; render(); };
+function changed(){ checks={}; render(); }
+
+[...modeSeg.children].forEach(b=> b.onclick=()=>{ mode=b.dataset.v; changed(); });
+[...stateSeg.children].forEach(b=> b.onclick=()=>{ state=b.dataset.v; changed(); });
+wakeOff.onclick=()=>{ useWake=false; changed(); };
+wakeOn.onclick=()=>{ useWake=true; changed(); };
+goIn.oninput=changed;
+wakeIn.oninput=changed;
+goIn.onchange=()=>{ const v=parseT(goIn.value); if(v!=null) goIn.value=toHHMM(snap15(v)); changed(); };
+wakeIn.onchange=()=>{ const v=parseT(wakeIn.value); if(v!=null) wakeIn.value=toHHMM(snap15(v)); changed(); };
+$("clear").onclick=()=>{ checks={}; render(); };
+
+goIn.value=toHHMM(snap15(nowMin()+240));
 render();
 </script>
 </body>
