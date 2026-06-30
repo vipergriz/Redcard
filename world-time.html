@@ -33,19 +33,20 @@
   .row:first-child{border-top:none}
   .name{flex:1; min-width:0; font-weight:700; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .day{flex:none; font-size:11px; font-weight:700; color:var(--mute); width:30px}
-  .time{flex:none; width:112px; text-align:right; font-weight:700; font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .time{flex:none; width:84px; text-align:right; font-weight:700; font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums; white-space:nowrap}
   .off{flex:none; width:66px; text-align:left; font-size:11px; font-weight:700; color:var(--accent); white-space:nowrap}
 </style>
 </head>
 <body>
 <header>
-  <div class="kicker">World Time &middot; v6</div>
+  <div class="kicker">World Time &middot; v7</div>
   <h1>WORLD TIME</h1>
 </header>
 <div class="list" id="list"></div>
 
 <script>
 const CITIES = [
+  ["Zulu","UTC"],
   ["Auburn","America/Chicago"],
   ["Atlanta","America/New_York"],
   ["Denver","America/Denver"],
@@ -71,7 +72,7 @@ function getParts(date, tz){
   return o;
 }
 function offsetMin(p, date){ const u=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second); return Math.round((u-date.getTime())/60000); }
-function fmt12(p){ let h=+p.hour; const ap=h>=12?"PM":"AM"; let hh=h%12; if(hh===0)hh=12; return `${hh}:${p.minute}:${p.second} ${ap}`; }
+function fmtTime(p){ return `${p.hour}:${p.minute}:${p.second}`; }
 function offLabel(min){ const s=min>=0?"+":"\u2212"; const a=Math.abs(min); const h=Math.floor(a/60), m=a%60; return `UTC${s}${h}${m?":"+String(m).padStart(2,"0"):""}`; }
 const wdFmt={};
 function weekday(date, tz){ if(!wdFmt[tz]) wdFmt[tz]=new Intl.DateTimeFormat("en-US",{timeZone:tz,weekday:"short"}); return wdFmt[tz].format(date); }
@@ -93,7 +94,7 @@ function tick(){
   rows.forEach(r=>{
     const p=getParts(now, r.tz);
     r.dayEl.textContent=weekday(now, r.tz);
-    r.timeEl.textContent=fmt12(p);
+    r.timeEl.textContent=fmtTime(p);
     r.offEl.textContent=offLabel(offsetMin(p, now));
   });
 }
