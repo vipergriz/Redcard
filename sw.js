@@ -1,5 +1,5 @@
 /* World Time service worker — offline cache */
-const CACHE = "worldtime-v6";
+const CACHE = "worldtime-v7";
 const ASSETS = ["./world-time.html"];
 
 self.addEventListener("install", (e) => {
