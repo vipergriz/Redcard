@@ -13,7 +13,7 @@
     --bg:#EAEEF2; --card:#FFFFFF; --soft:#F3F6F9; --line:#D6DDE4;
     --ink:#111922; --sec:#3C4A57; --mute:#6A7783;
     --go:#0E8A4C; --goTint:#E4F4EB; --amber:#9A6500; --amberTint:#FBF1DD;
-    --salt:#1668A8; --night:#5A3FA0; --nightTint:#EEE9F8; --accent:#0E5FA8;
+    --salt:#1668A8; --night:#5A3FA0; --nightTint:#EEE9F8; --accent:#0E5FA8; --accentTint:#E5EFF8;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -51,6 +51,12 @@
   .nt span{font-size:10px; font-weight:700; letter-spacing:.08em; color:var(--mute); text-transform:uppercase}
   .mini{flex:none; padding:8px 12px; border:1px solid var(--line); background:var(--soft); color:var(--mute); border-radius:8px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.06em; cursor:pointer; text-transform:uppercase}
   .mini.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .cup2{flex:none; display:flex; align-items:center; gap:5px; padding:2px 7px; margin-right:2px; border:1px solid var(--line); border-radius:7px; background:var(--soft); color:var(--mute); font-size:10.5px; font-weight:700; letter-spacing:.03em; cursor:pointer; text-transform:uppercase}
+  .cup2 .cb{width:13px; height:13px; border-radius:3px; border:1.5px solid #9AB0C8; background:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:10px; color:#fff; line-height:1}
+  .cup2 .cb::after{content:"\2713"; opacity:0}
+  .cup2.on{background:var(--accentTint); border-color:var(--accent); color:var(--accent)}
+  .cup2.on .cb{background:var(--accent); border-color:var(--accent)}
+  .cup2.on .cb::after{opacity:1}
 
   .gobar{
     margin:10px 16px 0; padding:9px 16px; background:var(--goTint);
@@ -85,7 +91,7 @@
 <body>
 <header>
   <div class="htext">
-    <div class="kicker">Hydration &middot; v5 &middot; ~165 lb</div>
+    <div class="kicker">Hydration &middot; v8 &middot; ~165 lb</div>
     <h1>WATER &amp; SALT &middot; GO</h1>
   </div>
   <button class="clear" id="clear">Clear</button>
@@ -127,10 +133,11 @@ const STATE={
 
 const store={ get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}} };
 const KEY="hydration.session";
-let mode="now", state="hyd", useWake=true, lockedStart=null;
+let mode="now", state="hyd", useWake=true, coffee2=false, lockedStart=null;
 let checks={};
+let lastSteps=[];
 let _restored=null;
-(function(){ const s=store.get(KEY,null); if(s){ _restored=s; mode=s.mode||"now"; state=s.state||"hyd"; useWake=s.useWake!==false; lockedStart=(typeof s.lockedStart==="number")?s.lockedStart:null; checks=s.checks||{}; } })();
+(function(){ const s=store.get(KEY,null); if(s){ _restored=s; mode=s.mode||"now"; state=s.state||"hyd"; useWake=s.useWake!==false; coffee2=!!s.coffee2; lockedStart=(typeof s.lockedStart==="number")?s.lockedStart:null; checks=s.checks||{}; } })();
 
 const $=(id)=>document.getElementById(id);
 const modeSeg=$("modeSeg"), stateSeg=$("stateSeg"), planInputs=$("planInputs");
@@ -143,21 +150,26 @@ function toHHMM(min){ min=((Math.round(min)%1440)+1440)%1440; const h=Math.floor
 function snap15(m){ return Math.round(m/15)*15; }
 function snap5(m){ return Math.round(m/5)*5; }
 function nowMin(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
-function rowLabel(act, amt){ if(act && /coffee/i.test(act)) return "Coffee"; if(amt && /(tsp|pinch)/i.test(amt)) return "Salt water"; return "Water"; }
+function rowLabel(act, amt){ if(act && /coffee/i.test(act)) return act; if(amt && /(tsp|pinch)/i.test(amt)) return "Salt water"; return "Water"; }
+function orderedSteps(p){ return p.includeNight ? p.night.concat(p.morning) : p.morning.slice(); }
+function sig(s){ return s.t + "|" + s.amt + "|" + (s.act||""); }
 
-function buildMorning(start, go, cfg){
+function buildMorning(start, go, cfg, coffee2){
   const M=[];
   M.push({t:start, amt:cfg.opener});
   M.push({t:start+20, act:"Coffee", amt:"12 oz"});
+  let coffeeEnd=start+50;
+  if(coffee2){ M.push({t:start+50, act:"Coffee (2nd)", amt:"12 oz"}); coffeeEnd=start+80; }
+  const firstWater=coffeeEnd+30;
   const lastDrink=go-45;
-  let t=start+80; const waters=[];
+  let t=firstWater; const waters=[];
   while(t<=lastDrink-25){ waters.push(t); t+=70; }
   waters.forEach((wt,i)=>{
     const salted = i < Math.ceil(waters.length/2);
     const oz = (i<waters.length-1)?cfg.oz:cfg.ozLast;
     M.push({t:wt, amt: salted?`${oz} oz \u00b7 1/8 tsp`:`${oz} oz`});
   });
-  if(lastDrink>=start+40) M.push({t:lastDrink, amt:"6 oz"});
+  if(lastDrink>=firstWater) M.push({t:lastDrink, amt:"6 oz"});
   return {steps:M, lastDrink};
 }
 
@@ -197,7 +209,7 @@ function compute(){
       ctx=`Start ${fmt(start)} \u00b7 ${cfg.label} \u00b7 backward-planned`;
     }
   }
-  const {steps:morning, lastDrink}=buildMorning(start, go, cfg);
+  const {steps:morning, lastDrink}=buildMorning(start, go, cfg, coffee2);
   const morningTail=`Sip only after ${fmt(lastDrink>=start+40?lastDrink:go)} \u2192 empty bladder before GO.`;
   let note=ctx;
   if(cfg.potassium) note += " \u00b7 add potassium early (banana / salted toast)";
@@ -207,8 +219,16 @@ function compute(){
 function appendHead(txt, night){ const h=document.createElement("div"); h.className="shead"+(night?" night":""); h.textContent=txt; listEl.appendChild(h); }
 function appendRow(r, i){
   const row=document.createElement("div"); row.className="row"+(checks[i]?" done":"");
-  const label=rowLabel(r.act, r.amt);
-  row.innerHTML=`<div class="box"></div><div class="time">${fmt(r.t)}</div><div class="act">${label}</div><div class="amt">${r.amt}</div>`;
+  row.innerHTML=`<div class="box"></div><div class="time">${fmt(r.t)}</div><div class="act">${rowLabel(r.act, r.amt)}</div>`;
+  if(r.act==="Coffee"){
+    const t=document.createElement("button");
+    t.className="cup2"+(coffee2?" on":"");
+    t.innerHTML=`<span class="cb"></span>2-cup`;
+    t.onclick=(e)=>{ e.stopPropagation(); toggleCoffee(!coffee2); };
+    row.appendChild(t);
+  }
+  const amt=document.createElement("div"); amt.className="amt"; amt.textContent=r.amt;
+  row.appendChild(amt);
   row.onclick=()=>{ checks[i]=!checks[i]; save(); render(); };
   listEl.appendChild(row);
 }
@@ -223,7 +243,8 @@ function render(){
   wakeField.classList.toggle("hide", !(mode==="plan" && useWake));
   listEl.innerHTML="";
   const p=compute();
-  if(p.error){ goTimeEl.textContent="\u2014"; goWinEl.textContent=""; noteEl.textContent=p.error; return; }
+  if(p.error){ lastSteps=[]; goTimeEl.textContent="\u2014"; goWinEl.textContent=""; noteEl.textContent=p.error; return; }
+  lastSteps=orderedSteps(p);
   goTimeEl.textContent=fmt(p.go);
   goWinEl.textContent=((p.go-p.start)/60).toFixed(1)+" hr";
   noteEl.textContent=p.note;
@@ -238,11 +259,23 @@ function render(){
   appendTail(p.morningTail);
 }
 
-function save(){ store.set(KEY,{mode,state,useWake,lockedStart,checks,goVal:goIn.value,wakeVal:wakeIn.value}); }
+function save(){ store.set(KEY,{mode,state,useWake,coffee2,lockedStart,checks,goVal:goIn.value,wakeVal:wakeIn.value}); }
 function changed(){ checks={}; if(mode==="now") lockedStart=snap5(nowMin()); save(); render(); }
 
 [...modeSeg.children].forEach(b=> b.onclick=()=>{ mode=b.dataset.v; changed(); });
 [...stateSeg.children].forEach(b=> b.onclick=()=>{ state=b.dataset.v; changed(); });
+function toggleCoffee(v){
+  if(coffee2===v) return;
+  const keep=new Set();
+  lastSteps.forEach((s,i)=>{ if(checks[i]) keep.add(sig(s)); });
+  coffee2=v;
+  const p=compute();
+  const steps=p.error?[]:orderedSteps(p);
+  const nc={};
+  steps.forEach((s,i)=>{ if(keep.has(sig(s))) nc[i]=true; });
+  checks=nc;
+  save(); render();
+}
 wakeOff.onclick=()=>{ useWake=false; changed(); };
 wakeOn.onclick=()=>{ useWake=true; changed(); };
 goIn.oninput=changed;
