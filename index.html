@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v101</div>
+  <div id="setupVer">Red Planning Tool v102</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v101</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v102</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -683,7 +683,7 @@ function lastSegTrail(inner,jet,n){const segs=chainGeom(jet);if(!segs.length)ret
   let d='';for(let i=start;i<segs.length;i++){const s=segs[i];d+='M'+s.pts[0].x.toFixed(1)+' '+s.pts[0].y.toFixed(1);for(let j=1;j<s.pts.length;j++)d+=' L'+s.pts[j].x.toFixed(1)+' '+s.pts[j].y.toFixed(1);}
   const path=document.createElementNS(NS,'path');path.setAttribute('d',d);path.setAttribute('fill','none');path.setAttribute('stroke',col);path.setAttribute('stroke-width',th);path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);
   inner.appendChild(svg);}
-function bracketShows(o,t){const res=(o.phase==='resolved');if(t==='resolved'||t==='origin'||t==='origin2')return res;if(t==='step')return lmode()===1?!res:false;if(t==='combined'&&printMode&&lmode()!==1)return false;return !res;}
+function bracketShows(o,t){const res=(o.phase==='resolved');const grid=(lmode()===1||lmode()===4);if(t==='resolved'||t==='origin'||t==='origin2')return res;if(t==='step')return grid?!res:false;if(t==='combined'&&printMode&&!grid)return false;return !res;}
 function presLegend(objs){const map=new Map();const comb=state.legendCombine||{};
   for(const o of objs){if(o.type!=='arrow')continue;
     const fi=(o.formation==null?99:o.formation);const f=state.formations[fi]||{};
