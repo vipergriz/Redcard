@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v98</div>
+  <div id="setupVer">Red Planning Tool v100</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v98</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v100</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -361,7 +361,7 @@
   <div class="head"><h2>Mission Master Setup</h2><button class="x" data-close>✕</button></div>
   <div class="body">
     <div class="field"><label>Print layout (tiles per presentation)</label>
-      <div class="seg" id="masterLayout"><button data-m="1">I · Single</button><button data-m="2">II · Double</button><button data-m="3">III · Triple</button></div>
+      <div class="seg" id="masterLayout"><button data-m="1">I·Single</button><button data-m="2">II·Double</button><button data-m="3">III·Triple</button><button data-m="4">IV·4-up</button></div>
       <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35">I &amp; III: small arrows, callsign/altitude shown in a legend. II: larger arrows with callsign/altitude on the arrow. I = picture+maneuver in one tile (≤8 jets). II = picture + maneuver. III = picture + maneuver + resolved.</div></div>
     <div class="field"><label>Workspace scale (geographic size of the white square)</label>
       <div class="seg" id="masterScale"><button data-s="25">25 × 25 NM</button><button data-s="30">30 × 30 NM</button><button data-s="40">40 × 40 NM</button></div></div>
@@ -413,15 +413,20 @@ const norm=a=>((a%360)+360)%360;
 const ur=a=>({x:Math.cos(a*Math.PI/180),y:Math.sin(a*Math.PI/180)});
 function csFor(fi,ship){const f=state.formations[fi]||{name:''};return ((f.name||'')+(ship?ship:'')).toUpperCase();}
 function abbrevCS(cs){cs=(cs||'').toUpperCase();const m=cs.match(/^([A-Z]+)(\d*)$/);if(!m)return cs;const w=m[1],n=m[2];return (w.length>=2?(w[0]+w[w.length-1]):w)+n;}
-function altLevels(str){str=String(str||'').toUpperCase().replace(/SFC/g,'0').replace(/FL/g,'').replace(/K/g,'');
+function altLevelsOne(str){str=String(str||'').toUpperCase().replace(/SFC/g,'0').replace(/FL/g,'').replace(/K/g,'');
   const plus=/\+/.test(str);const nums=(str.match(/\d+(?:\.5)?/g)||[]).map(parseFloat).map(Math.floor);let lv=[];
   if(nums.length>=2){const a=Math.min(nums[0],nums[1]),b=Math.max(nums[0],nums[1]);for(let i=a;i<=b;i++)lv.push(i);}
   else if(nums.length===1){if(plus){for(let i=nums[0];i<=50;i++)lv.push(i);}else lv.push(nums[0]);}
-  return lv.filter(n=>n>=0&&n<=50);}
-function fmtAlt(a){a=String(a||'').trim().toUpperCase();if(!a)return '';if(a==='SFC')return 'SFC';
+  return lv;}
+function altLevels(str){let lv=[];String(str||'').split(',').forEach(p=>{lv=lv.concat(altLevelsOne(p));});
+  return lv.filter((n,i,a)=>a.indexOf(n)===i&&n>=0&&n<=50);}
+function fmtAltOne(a){a=String(a||'').trim().toUpperCase();if(!a)return '';if(a==='SFC')return 'SFC';
   let m=a.match(/^(\d+(?:\.5)?)(\+)?$/);if(m){let n=parseFloat(m[1]);return (n%1?n.toFixed(1):String(n))+'K'+(m[2]||'');}
   let r=a.match(/^(\d+(?:\.5)?)\s*-\s*(\d+(?:\.5)?)$/);if(r){const f=x=>{let n=parseFloat(x);return n%1?n.toFixed(1):String(n);};return f(r[1])+'-'+f(r[2])+'K';}
   return a;}
+function fmtAlt(a){a=String(a||'').trim();if(!a)return '';
+  if(a.indexOf(',')>=0)return a.split(',').map(s=>fmtAltOne(s.trim())).filter(Boolean).join(', ');
+  return fmtAltOne(a);}
 function isBlueAlt(str){const lv=altLevels(str);if(!lv.length)return false;const rs=new Set(state.redAlts||[]);return lv.some(l=>!rs.has(l));}
 function onTap(el,fn){let sx=0,sy=0,moved=false;
   el.addEventListener('pointerdown',e=>{e.stopPropagation();sx=e.clientX;sy=e.clientY;moved=false;});
@@ -483,7 +488,7 @@ function buildEl(o){
   el.style.left=o.x+'px';el.style.top=o.y+'px';makeDraggable(el,o);return el;
 }
 function lmode(){return state.layoutMode||1;}
-function pageSize(){return lmode()===2?3150:1680;}
+function pageSize(){return 1680;} // constant: layout mode must NOT change the editor coordinate space, or stored arrow positions get reinterpreted and jump. Print tile sizing is unaffected (arrows are a fixed % of the square workspace).
 function applyPageSize(){W=H=pageSize();if(scene){scene.style.width=W+'px';scene.style.height=H+'px';}}
 const SCALES={25:{mul:1.0,defBar:10,shift:8},30:{mul:1.5,defBar:10,shift:9},40:{mul:1.5,defBar:20,shift:12}};
 function scaleCfg(){return SCALES[state.scaleNM||25]||SCALES[25];}
@@ -967,12 +972,23 @@ function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAl
       if(dec>0){const dv=document.createElement('div');dv.className='alt-div';grid.appendChild(dv);}
     }
     container.appendChild(grid);return;}
-  // ---- picker: vertical tape with block selection ----
-  let anchor=null,hasBlock=false,curLow=null,curHigh=null;const rowEls=[];
+  // ---- picker: build one or more blocks (e.g. "17-19, 29, 35") ----
+  let anchor=null,hasBlock=false,curLow=null,curHigh=null;const rowEls=[];const parts=[];
+  (opts.current||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>parts.push(s));
   const hdr=document.createElement('div');hdr.className='pick-hdr';
-  const selLabel=document.createElement('div');selLabel.className='pick-sel';
-  selLabel.innerHTML='Tap a level to set it. Tap a second level to make a block.<span class="hint">Tap ✕ when done — your pick is saved. Callsigns show who already holds a block.</span>';
-  hdr.append(selLabel);container.appendChild(hdr);
+  const field=document.createElement('input');field.type='text';field.value=parts.join(', ');field.placeholder='e.g. 17-19, 29, 35';
+  field.style.cssText='width:100%;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:16px;font-weight:700;box-sizing:border-box;font-family:"Courier New",monospace';
+  const hint=document.createElement('div');hint.className='pick-sel';hint.style.marginTop='8px';
+  hint.innerHTML='Tap a level (or two for a block), then <b>＋ Add</b> to keep it and start another block — or just type. ✕ saves.';
+  const selRow=document.createElement('div');selRow.style.cssText='display:flex;gap:8px;align-items:center;margin-top:8px';
+  const selShow=document.createElement('div');selShow.style.cssText='flex:1;font-weight:800;font-family:"Courier New",monospace;color:var(--txt)';selShow.textContent='—';
+  const addBtn=document.createElement('button');addBtn.className='btn primary';addBtn.style.cssText='flex:0 0 auto';addBtn.textContent='＋ Add';
+  selRow.append(selShow,addBtn);
+  hdr.append(field,hint,selRow);container.appendChild(hdr);
+  const pendingStr=()=>curLow==null?'':(curLow===curHigh?(curLow===0?'SFC':String(curLow)):(curLow+'-'+curHigh));
+  const syncField=()=>{const p=pendingStr();const all=parts.concat(p?[p]:[]);field.value=all.join(', ');pick(all.join(', '));};
+  addBtn.onclick=()=>{const p=pendingStr();if(!p)return;parts.push(p);curLow=curHigh=anchor=null;hasBlock=false;selShow.textContent='—';refresh();syncField();};
+  field.addEventListener('input',()=>{parts.length=0;field.value.split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>parts.push(s));curLow=curHigh=anchor=null;hasBlock=false;selShow.textContent='—';refresh();pick(field.value.trim());});
   const tape=document.createElement('div');tape.className='alt-tape';
   for(let n=50;n>=0;n--){const row=document.createElement('button');row.className='alt-row'+(rs.has(n)?' red':'');
     row.appendChild(Object.assign(document.createElement('span'),{textContent:(n===0?'SFC':n)}));
@@ -981,11 +997,11 @@ function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAl
         if(anchor===null||hasBlock){anchor=n;hasBlock=false;curLow=curHigh=n;}
         else if(n===anchor){curLow=curHigh=n;hasBlock=false;}
         else{curLow=Math.min(anchor,n);curHigh=Math.max(anchor,n);hasBlock=true;}
-        pick(curLow===curHigh?(curLow===0?'SFC':String(curLow)):(curLow+'-'+curHigh));refresh();return;};
+        selShow.textContent=fmtAlt(pendingStr())||'—';refresh();syncField();};
     rowEls[n]=row;tape.appendChild(row);}
   container.appendChild(tape);
   function refresh(){for(let n=0;n<=50;n++)if(rowEls[n])rowEls[n].classList.toggle('picked',curLow!==null&&n>=curLow&&n<=curHigh);}
-  const cc=(opts.current||'').trim();if(cc){if(cc.includes('-')){const p=cc.split('-');const a=p[0]==='SFC'?0:parseInt(p[0]),b=p[1]==='SFC'?0:parseInt(p[1]);if(!isNaN(a)&&!isNaN(b)){curLow=Math.min(a,b);curHigh=Math.max(a,b);anchor=curLow;hasBlock=true;}}else{const v=cc==='SFC'?0:parseInt(cc);if(!isNaN(v)){curLow=curHigh=v;anchor=v;hasBlock=false;}}}refresh();
+  refresh();
 }
 function openAltEditor(back){$('altTitle').textContent='Red air altitude blocks';$('altHelp').textContent='Tap a level to flag it Red air. Blue = Blue air. Macros fill quick blocks.';buildAltTape($('altBody'),{onChange:render});openSheet('altSheet');if(back)sheetCloseHook=back;}
 function askActionRange(card){
@@ -1287,6 +1303,9 @@ function applyLoaded(d){
   const ns={defaultAngle:d.defaultAngle||180,active:d.active||0,zoom:1,tx:0,ty:0,turnDir:-1,showMode:false,perPage:d.perPage||2,layoutMode:d.layoutMode||1,scaleNM:d.scaleNM||25,fightAxis:(d.fightAxis==null?null:d.fightAxis),mission:d.mission||null,showLegend:d.showLegend!==false,showGroupAlt:d.showGroupAlt!==false,legendCombine:(d.legendCombine&&typeof d.legendCombine==="object")?d.legendCombine:{},pullLeft:!!d.pullLeft,formations:d.formations||[],redAlts:Array.isArray(d.redAlts)?d.redAlts:[],tanker:Object.assign({on:false,cs:'',arct:'',track:'',alt:'',offload:''},d.tanker||{}),points:Array.isArray(d.points)?d.points:[],notesLeft:(d.notesLeft&&Array.isArray(d.notesLeft.items))?d.notesLeft:{items:[]},notesRight:(d.notesRight&&Array.isArray(d.notesRight.items))?d.notesRight:{items:[]},cards:d.cards,cur:d.cur||0,selected:null};
   if(!ns.cards||!ns.cards.length){ns.cards=[{name:'Alpha',title:d.title||'',objects:d.objects||[]}];ns.cur=0;}
   ns.cards.forEach(c=>{if(!Array.isArray(c.objects))c.objects=[];});
+  if(!d.pxFix){const RS=1680/3150;ns.cards.forEach(c=>{let mx=0;c.objects.forEach(o=>{if(typeof o.x==='number')mx=Math.max(mx,Math.abs(o.x));if(typeof o.y==='number')mx=Math.max(mx,Math.abs(o.y));});
+    if(mx>1680){c.objects.forEach(o=>{if(typeof o.x==='number')o.x=Math.round(o.x*RS);if(typeof o.y==='number')o.y=Math.round(o.y*RS);});}});}
+  ns.pxFix=true;
   if(!ns.formations.length)ns.formations=[{color:PALETTE[0],name:'A',ships:1}];
   state=ns;state.objects=state.cards[Math.min(state.cur,state.cards.length-1)].objects;
   state.cards.forEach(c=>c.objects.forEach(o=>{const n=parseInt((o.id||'').replace('o',''));if(n>=uid)uid=n+1;
@@ -1295,7 +1314,7 @@ function applyLoaded(d){
 }
 let _saveT=null;
 function persist(){try{if(_saveT)clearTimeout(_saveT);}catch(_){}
-  _saveT=setTimeout(()=>{try{localStorage.setItem('dca_coord_card',JSON.stringify({defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,mission:state.mission,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,pullLeft:state.pullLeft,cards:state.cards,cur:state.cur}));}catch(_){}},400);}
+  _saveT=setTimeout(()=>{try{localStorage.setItem('dca_coord_card',JSON.stringify({defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,mission:state.mission,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,pullLeft:state.pullLeft,pxFix:true,cards:state.cards,cur:state.cur}));}catch(_){}},400);}
 function tryRestore(){let s=null;try{s=localStorage.getItem('dca_coord_card');}catch(_){return false;}if(!s)return false;
   let d;try{d=JSON.parse(s);}catch(_){return false;}if(!d||(!d.cards&&!d.objects))return false;applyLoaded(d);return true;}
 
@@ -1307,7 +1326,7 @@ function ensureMission(){if(!state.mission)state.mission=defaultMission();return
 function pad2(n){return ('0'+n).slice(-2);}
 function missionBase(m){return m.date+'_'+m.ampm+'_'+(MTYPE_TOKEN[m.type]||m.type);}
 function missionName(m){return missionBase(m)+'_v'+pad2(m.version);}
-function serializableState(){return {defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,pullLeft:state.pullLeft,cards:state.cards,cur:state.cur};}
+function serializableState(){return {defaultAngle:state.defaultAngle,active:state.active,formations:state.formations,redAlts:state.redAlts,tanker:state.tanker,points:state.points,notesLeft:state.notesLeft,notesRight:state.notesRight,perPage:state.perPage,layoutMode:state.layoutMode,scaleNM:state.scaleNM,fightAxis:state.fightAxis,showLegend:state.showLegend,showGroupAlt:state.showGroupAlt,legendCombine:state.legendCombine,pullLeft:state.pullLeft,pxFix:true,cards:state.cards,cur:state.cur};}
 function buildMissionObj(){return {app:'RedPlanningTool',fmt:1,mission:Object.assign({},ensureMission()),savedAt:new Date().toISOString(),state:serializableState()};}
 function msIndex(){try{return JSON.parse(localStorage.getItem('rpt_missions')||'[]');}catch(_){return [];}}
 function msSetIndex(a){try{localStorage.setItem('rpt_missions',JSON.stringify(a));}catch(_){}}
@@ -1478,7 +1497,7 @@ function buildPageFor(group,fullH){
   const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';page.appendChild(content);
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';content.appendChild(fold);
   const notesH=Math.round(SH*0.33),rNotes=notesActive('right'),notesY=SH-notesH,m=lmode();
-  const cond=(!!state.pullLeft)&&(m!==1)&&!!group[0]; // pull first presentation into the bottom-left
+  const cond=(!!state.pullLeft)&&(m!==1)&&(m!==4)&&!!group[0]; // pull first presentation into the bottom-left (band layouts only)
   const lNotes=notesActive('left');
   const lNoteH=cond?(lNotes?Math.round(SH*0.22):0):(lNotes?notesH:0);
   const briefH=cond?(lNotes?Math.round(SH*0.34):Math.round(SH*0.50)):(lNotes?(notesY-12):SH);
@@ -1486,7 +1505,7 @@ function buildPageFor(group,fullH){
   left.innerHTML=leftBriefHTML(cond);
   content.appendChild(left);
   const FG=12,rx=HALF+FG,rw=SW-rx,top=14,rh=(rNotes?(notesY-12-top):(SH-2*top));
-  if(m===1){const cols=3,rows=2,cgap=12,rgap=14;const cw=(rw-(cols-1)*cgap)/cols,chh=(rh-(rows-1)*rgap)/rows;
+  if(m===1||m===4){const cols=(m===4?2:3),rows=2,cgap=12,rgap=14;const cw=(rw-(cols-1)*cgap)/cols,chh=(rh-(rows-1)*rgap)/rows;
     group.forEach((card,bi)=>{if(bi>=cols*rows)return;const r=Math.floor(bi/cols),c=bi%cols;buildCell(content,card,rx+c*(cw+cgap),top+r*(chh+rgap),cw,chh);});
   }else if(cond){const lbGap=14,lbY=briefH+lbGap,lbX=0,lbW=HALF-FG,lbBot=SH-(lNotes?(lNoteH+lbGap):0),lbH=lbBot-lbY;
     if(group[0])buildBand(content,group[0],lbX,lbY,lbW,lbH);
@@ -1502,7 +1521,7 @@ function buildPages(scaled){
   const sheet=$('printSheet');sheet.innerHTML='';
   const PW=1056,PH=PRINT_H;
   const pv=scaled?Math.min(1,(window.innerWidth-24)/PW):1;
-  const m=lmode(),per=m===1?6:((state.pullLeft&&m!==1)?3:2);
+  const m=lmode(),per=m===1?6:m===4?4:((state.pullLeft&&m!==1)?3:2);
   for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);const page=buildPageFor(group,PRINT_H);
     if(scaled){const h=document.createElement('div');h.className='pageholder';h.style.width=(PW*pv)+'px';h.style.height=(PH*pv)+'px';page.style.transform='scale('+pv+')';page.style.transformOrigin='top left';h.appendChild(page);sheet.appendChild(h);}
     else sheet.appendChild(page);}
@@ -1551,7 +1570,7 @@ async function exportPDF(btn){
   const old=btn?btn.textContent:'';if(btn){btn.textContent='Building…';btn.disabled=true;}
   const holder=document.createElement('div');holder.style.cssText='position:fixed;left:-99999px;top:0;background:#fff';document.body.appendChild(holder);
   try{
-    const m=lmode(),per=m===1?6:((state.pullLeft&&m!==1)?3:2),R=3,imgs=[];
+    const m=lmode(),per=m===1?6:m===4?4:((state.pullLeft&&m!==1)?3:2),R=3,imgs=[];
     if(!state.cards.length){flash('No cards to export');return;}
     for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);
       const page=buildPageFor(group,816);holder.appendChild(page);
