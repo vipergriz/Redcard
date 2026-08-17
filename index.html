@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v100</div>
+  <div id="setupVer">Red Planning Tool v101</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v100</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v101</small><span id="titleText">Red OCA – Vul+0</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -1397,13 +1397,15 @@ function buildBand(page,card,x,y,w,h){
   if(legShow&&lgH>10){const lg=legendEl(card.objects,11,true);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=lgTop+'px';lg.style.width=w+'px';lg.style.height=lgH+'px';lg.style.overflow='hidden';page.appendChild(lg);}
 }
 function buildCell(page,card,x,y,w,h){
-  const headH=15,gap=5;
+  const headH=17,gap=5,pad=6;
   const sp=(card.frames&&card.frames[0])?card.frames[0]:{type:'step',k:999};
-  const hdr=document.createElement('div');hdr.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;font-size:11px;font-weight:800;color:#111;border-top:2px solid #111;padding-top:2px;text-align:center';hdr.textContent=(card.name||'').toUpperCase();page.appendChild(hdr);
+  const box=document.createElement('div');box.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px;border:1.5px solid #111;border-radius:7px;box-sizing:border-box;background:#fff';page.appendChild(box);
+  const hdr=document.createElement('div');hdr.style.cssText='position:absolute;left:'+x+'px;top:'+(y+3)+'px;width:'+w+'px;font-size:11px;font-weight:800;color:#111;text-align:center';hdr.textContent=(card.name||'').toUpperCase();page.appendChild(hdr);
   const legShow=state.showLegend!==false;
-  const side=Math.min(w,h-headH-gap-(legShow?54:0)),boxTop=y+headH,legTop=boxTop+side+gap,legH=h-headH-side-gap;
+  const side=Math.min(w-2*pad,h-headH-gap-(legShow?50:0)),boxTop=y+headH,legTop=boxTop+side,legH=h-headH-side-pad;
   const bx=phaseBoxEl(card,sp,side,side);bx.style.position='absolute';bx.style.left=(x+(w-side)/2)+'px';bx.style.top=boxTop+'px';page.appendChild(bx);
-  if(legShow){const lg=legendEl(card.objects,9);lg.style.position='absolute';lg.style.left=x+'px';lg.style.top=legTop+'px';lg.style.width=w+'px';lg.style.height=legH+'px';lg.style.overflow='hidden';page.appendChild(lg);}
+  if(legShow){const sepY=legTop+2;const sep=document.createElement('div');sep.style.cssText='position:absolute;left:'+(x+pad)+'px;top:'+sepY+'px;width:'+(w-2*pad)+'px;height:0;border-top:1px solid #bbb';page.appendChild(sep);
+    const lg=legendEl(card.objects,9);lg.style.position='absolute';lg.style.left=(x+pad)+'px';lg.style.top=(sepY+4)+'px';lg.style.width=(w-2*pad)+'px';lg.style.height=(legH-6)+'px';lg.style.overflow='hidden';page.appendChild(lg);}
 }
 function fmtFlightCS(f){const n=(f.name||'').toUpperCase();const fn=(f.flightNo!=null?String(f.flightNo).trim():'');return n+(fn?(' '+fn):'');}
 function briefCols(){const defs=[['acft','A/C'],['taxi','TAXI'],['to','T/O'],['aux','AUX'],['stn','STN']];
