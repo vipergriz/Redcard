@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v102</div>
+  <div id="setupVer">Red Planning Tool v103</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v102</small><span id="titleText">Red OCA – Vul+0</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v103</small><span id="titleText">Alpha</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -396,8 +396,8 @@ let uid=1; const nid=()=>'o'+(uid++);
 
 let state={
   defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,legendCombine:{},pullLeft:false,formations:[{color:PALETTE[0],name:"MIG",ships:2,aux:"369.000",stn:"30010-1"}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
-  cards:[{name:'Alpha',title:'Red OCA – Vul+0',objects:[]}],cur:0,turnDir:-1,tx:0,ty:0,showMode:false,
-  title:'Red OCA – Vul+0',objects:null,selected:null
+  cards:[{name:'Alpha',title:'',objects:[]}],cur:0,turnDir:-1,tx:0,ty:0,showMode:false,
+  title:'',objects:null,selected:null
 };
 state.objects=state.cards[0].objects;
 let wiz={dir:180,axis:270,scale:25,forms:[{name:"MIG",ships:4}]};
@@ -559,8 +559,18 @@ function chainArrowsSvg(jet,kk){
     if(Math.abs(s.turn||0)<8)svgHead(svg,s.end,s.endHead,col,th*1.2);else svgHalfHead(svg,s.end,s.endHead,col,th*1.2,s.turn>0?1:-1);
     hitD+='M'+s.pts[0].x.toFixed(1)+' '+s.pts[0].y.toFixed(1);for(let k=1;k<s.pts.length;k++)hitD+=' L'+s.pts[k].x.toFixed(1)+' '+s.pts[k].y.toFixed(1);
   }
+  if(jet.vert&&segs.length){drawVertSlashes(svg,segs[0],jet.vert,th);}
   if(!staticMode){const hit=document.createElementNS(NS,'path');hit.setAttribute('d',hitD);hit.setAttribute('fill','none');hit.setAttribute('stroke','rgba(0,0,0,0)');hit.setAttribute('stroke-width','26');hit.style.pointerEvents='stroke';svg.appendChild(hit);onTap(hit,()=>{selectOnly(jet.id);openInspector();});}
   return svg;
+}
+function mkSlash(svg,P,angDeg,len,sw){const a=angDeg*Math.PI/180,dx=Math.cos(a)*len/2,dy=Math.sin(a)*len/2;const ln=document.createElementNS(NS,'line');ln.setAttribute('x1',(P.x-dx).toFixed(1));ln.setAttribute('y1',(P.y-dy).toFixed(1));ln.setAttribute('x2',(P.x+dx).toFixed(1));ln.setAttribute('y2',(P.y+dy).toFixed(1));ln.setAttribute('stroke','#111');ln.setAttribute('stroke-width',sw);ln.setAttribute('stroke-linecap','round');svg.appendChild(ln);}
+function drawVertSlashes(svg,seg,vert,th){const geo=arrowGeo();const big=Math.round(geo.th),small=Math.round(geo.th*0.58);
+  const pts=seg.pts,le=pts[pts.length-1],ae=pts[pts.length-2]||pts[0];
+  const mid={x:(ae.x+le.x)/2,y:(ae.y+le.y)/2},un=ur(seg.endHead);
+  const spacing=Math.max(big*0.55,12),sw=Math.max(4,Math.round(th));
+  const p1={x:mid.x-un.x*spacing/2,y:mid.y-un.y*spacing/2},p2={x:mid.x+un.x*spacing/2,y:mid.y+un.y*spacing/2};
+  const l1=vert==='climb'?small:big,l2=vert==='climb'?big:small,ang=seg.endHead+58;
+  mkSlash(svg,p1,ang,l1,sw);mkSlash(svg,p2,ang,l2,sw);
 }
 function buildChain(jet){return chainArrowsSvg(jet);}
 function buildGhost(jet,end,head){
@@ -1051,6 +1061,8 @@ function buildInspector(o){
     h+=`<div class="seg" id="iTurn" style="margin-bottom:8px"><button data-d="-1">Turn left</button><button data-d="1">Turn right</button></div>`;
     h+=`<div class="preset" id="iMan">${MANEUVERS.map(m=>`<button data-m="${m}"${man.length>=6?' disabled style="opacity:.35"':''}>${m}</button>`).join('')}</div>`;
     h+=`<div class="chainsum"${man.length?'':' data-empty="1"'}>${man.length?man.map(s=>esc(s.kind)+(s.kind==='Continue'?'':' '+(s.dir>0?'R':'L'))).join('  →  '):'— no maneuvers yet —'}</div><div class="row"><button class="btn" id="manUndo"${man.length?'':' disabled style="opacity:.4"'}>Undo last</button><button class="btn danger" id="manClear"${man.length?'':' disabled style="opacity:.4"'}>Clear</button></div>`;
+    h+=`<div class="sub-h" style="margin-top:10px">Climb / Descend (first maneuver line)</div>`;
+    h+=`<div class="seg" id="iVert"><button data-v="">Level</button><button data-v="climb">Climb ⟋</button><button data-v="descend">Descend ⟍</button></div>`;
     h+=`<button class="btn" id="manFormation" style="width:100%;margin-top:8px">Apply this maneuver to all ${esc(fname)} ▸</button>`;
     h+=`<p style="color:var(--muted);font-size:13px;margin:8px 0 0">Set left/right, then tap a maneuver. Continue extends straight one arrow-length. On the card, tap the jet or its faded end-arrow to add the next.</p>`;
     h+=`<div class="sub-h">Altitude</div>`;
@@ -1098,6 +1110,7 @@ function buildInspector(o){
     if(inp.dataset.k==='alt')inp.addEventListener('change',()=>{if(o.alt&&isBlueAlt(o.alt))blueAltConfirm(()=>openAltPicker(o),null);});});
   body.querySelectorAll('[data-toggle]').forEach(sw=>{const k=sw.dataset.toggle;sw.classList.toggle('on',!!o[k]);sw.addEventListener('click',()=>{o[k]=!o[k];sw.classList.toggle('on',o[k]);render();});});
   const it=body.querySelector('#iTurn');if(it)[...it.children].forEach(b=>{b.classList.toggle('sel',(state.turnDir||-1)===+b.dataset.d);b.onclick=()=>{state.turnDir=+b.dataset.d;[...it.children].forEach(x=>x.classList.toggle('sel',x===b));};});
+  const ivv=body.querySelector('#iVert');if(ivv)[...ivv.children].forEach(b=>{b.classList.toggle('sel',(o.vert||'')===b.dataset.v);b.onclick=()=>{o.vert=b.dataset.v;[...ivv.children].forEach(x=>x.classList.toggle('sel',x===b));render();persist();};});
   const im=body.querySelector('#iMan');if(im)[...im.children].forEach(b=>b.onclick=()=>{if((o.man||[]).length>=6)return;o.man=o.man||[];o.man.push({kind:b.dataset.m,dir:state.turnDir||-1});
     const card=curCard(),total=state.objects.reduce((n,x)=>n+((x.type==='arrow'&&x.man)?x.man.length:0),0);
     if(total===1&&card&&!card.actionRange)askActionRange(card);
@@ -1303,6 +1316,7 @@ function applyLoaded(d){
   const ns={defaultAngle:d.defaultAngle||180,active:d.active||0,zoom:1,tx:0,ty:0,turnDir:-1,showMode:false,perPage:d.perPage||2,layoutMode:d.layoutMode||1,scaleNM:d.scaleNM||25,fightAxis:(d.fightAxis==null?null:d.fightAxis),mission:d.mission||null,showLegend:d.showLegend!==false,showGroupAlt:d.showGroupAlt!==false,legendCombine:(d.legendCombine&&typeof d.legendCombine==="object")?d.legendCombine:{},pullLeft:!!d.pullLeft,formations:d.formations||[],redAlts:Array.isArray(d.redAlts)?d.redAlts:[],tanker:Object.assign({on:false,cs:'',arct:'',track:'',alt:'',offload:''},d.tanker||{}),points:Array.isArray(d.points)?d.points:[],notesLeft:(d.notesLeft&&Array.isArray(d.notesLeft.items))?d.notesLeft:{items:[]},notesRight:(d.notesRight&&Array.isArray(d.notesRight.items))?d.notesRight:{items:[]},cards:d.cards,cur:d.cur||0,selected:null};
   if(!ns.cards||!ns.cards.length){ns.cards=[{name:'Alpha',title:d.title||'',objects:d.objects||[]}];ns.cur=0;}
   ns.cards.forEach(c=>{if(!Array.isArray(c.objects))c.objects=[];});
+  const STALE_TITLE='Red OCA \u2013 Vul+0';if(ns.title===STALE_TITLE)ns.title='';ns.cards.forEach(c=>{if(c.title===STALE_TITLE)c.title='';});
   if(!d.pxFix){const RS=1680/3150;ns.cards.forEach(c=>{let mx=0;c.objects.forEach(o=>{if(typeof o.x==='number')mx=Math.max(mx,Math.abs(o.x));if(typeof o.y==='number')mx=Math.max(mx,Math.abs(o.y));});
     if(mx>1680){c.objects.forEach(o=>{if(typeof o.x==='number')o.x=Math.round(o.x*RS);if(typeof o.y==='number')o.y=Math.round(o.y*RS);});}});}
   ns.pxFix=true;
@@ -1636,7 +1650,7 @@ function finishSetup(skip){let forms=skip?wiz.forms:wiz.forms.filter(f=>(f.name|
 
 /* ============ INIT ============ */
 let _restored=false;try{_restored=tryRestore();}catch(_){}
-if(!_restored){$('setup').classList.add('hidden');ensureScaleDefaults();$('titleText').textContent=state.title;updateActions();renderPresBar();render();fitZoom();openMaster();}
+if(!_restored){$('setup').classList.add('hidden');ensureScaleDefaults();$('titleText').textContent=(state.cards[state.cur]&&(state.cards[state.cur].title||state.cards[state.cur].name))||'';updateActions();renderPresBar();render();fitZoom();openMaster();}
 window.addEventListener('orientationchange',()=>setTimeout(fitZoom,300));
 </script>
 </body>
