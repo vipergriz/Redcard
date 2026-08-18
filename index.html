@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v103</div>
+  <div id="setupVer">Red Planning Tool v104</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v103</small><span id="titleText">Alpha</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v104</small><span id="titleText">Alpha</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -756,13 +756,17 @@ function addGroupAlts(inner,spec){
   const groups=new Map();for(let i=0;i<n;i++){const g=find(i);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(arr[i]);}
   const fs=Math.round(th*0.65),gap=Math.round(fs*0.75);
   groups.forEach(members=>{
-    let lo=Infinity,hi=-Infinity;
-    for(const m of members){const lv=altLevels(m.o.alt);if(lv.length){lo=Math.min(lo,lv[0]);hi=Math.max(hi,lv[lv.length-1]);}}
-    if(!isFinite(lo))return;
+    const set=new Set();for(const m of members)altLevels(m.o.alt).forEach(l=>set.add(l));
+    if(!set.size)return;
+    const levels=[...set].sort((a,b)=>a-b);const runs=[];let rs=levels[0],rp=levels[0];
+    for(let i=1;i<levels.length;i++){if(levels[i]===rp+1)rp=levels[i];else{runs.push([rs,rp]);rs=rp=levels[i];}}
+    runs.push([rs,rp]);
+    if(runs.length>2)return; // multiple non-contiguous blocks won't fit next to the arrows — the legend below carries them
+    const txt=runs.map(r=>bandStr(r[0],r[1])).join('\n');
     let cx=0,cy=0,dx=0,dy=0;for(const m of members){cx+=m.st.x;cy+=m.st.y;dx+=m.d.x;dy+=m.d.y;}
     cx/=members.length;cy/=members.length;const dl=Math.hypot(dx,dy)||1;dx/=dl;dy/=dl;
     const px=cx-dx*(len/2+gap),py=cy-dy*(len/2+gap);
-    const el=document.createElement('div');el.className='galt';el.textContent=bandStr(lo,hi);
+    const el=document.createElement('div');el.className='galt';el.textContent=txt;el.style.whiteSpace='pre-line';el.style.textAlign='center';
     el.style.left=px.toFixed(1)+'px';el.style.top=py.toFixed(1)+'px';el.style.fontSize=fs+'px';inner.appendChild(el);});
 }
 function modeFrames(card){const ar=card&&card.actionRange,aLab=ar?('ACTION @ '+ar+'NM'):'MANEUVER',m=lmode();
