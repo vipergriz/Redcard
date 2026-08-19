@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v105</div>
+  <div id="setupVer">Red Planning Tool v106</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v105</small><span id="titleText">Alpha</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v106</small><span id="titleText">Alpha</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -413,17 +413,26 @@ const norm=a=>((a%360)+360)%360;
 const ur=a=>({x:Math.cos(a*Math.PI/180),y:Math.sin(a*Math.PI/180)});
 function csFor(fi,ship){const f=state.formations[fi]||{name:''};return ((f.name||'')+(ship?ship:'')).toUpperCase();}
 function abbrevCS(cs){cs=(cs||'').toUpperCase();const m=cs.match(/^([A-Z]+)(\d*)$/);if(!m)return cs;const w=m[1],n=m[2];return (w.length>=2?(w[0]+w[w.length-1]):w)+n;}
-function altLevelsOne(str){str=String(str||'').toUpperCase().replace(/SFC/g,'0').replace(/FL/g,'').replace(/K/g,'');
-  const plus=/\+/.test(str);const nums=(str.match(/\d+(?:\.5)?/g)||[]).map(parseFloat).map(Math.floor);let lv=[];
-  if(nums.length>=2){const a=Math.min(nums[0],nums[1]),b=Math.max(nums[0],nums[1]);for(let i=a;i<=b;i++)lv.push(i);}
-  else if(nums.length===1){if(plus){for(let i=nums[0];i<=50;i++)lv.push(i);}else lv.push(nums[0]);}
+function parseAltBlock(s){s=String(s||'').trim().toUpperCase().replace(/FL/g,'').replace(/K/g,'').replace(/SFC/g,'0');
+  let m;
+  if(m=s.match(/^(\d+)\s*-\s*(\d+)$/)){const a=+m[1],b=+m[2];return {lo:Math.min(a,b),hi:Math.max(a,b),kind:'range'};}
+  if(m=s.match(/^(\d+)\s*\+$/))return {lo:+m[1],hi:+m[1],kind:'above'};
+  if(m=s.match(/^(\d+)\s*-$/))return {lo:+m[1],hi:+m[1],kind:'below'};
+  if(m=s.match(/^(\d+)$/))return {lo:+m[1],hi:+m[1],kind:'single'};
+  return null;}
+function altLevelsOne(str){const b=parseAltBlock(str);if(!b)return [];let lv=[];
+  if(b.kind==='range'){for(let i=b.lo;i<=b.hi;i++)lv.push(i);}
+  else if(b.kind==='above'){for(let i=b.lo;i<=50;i++)lv.push(i);}
+  else if(b.kind==='below'){for(let i=0;i<=b.lo;i++)lv.push(i);}
+  else lv.push(b.lo);
   return lv;}
 function altLevels(str){let lv=[];String(str||'').split(',').forEach(p=>{lv=lv.concat(altLevelsOne(p));});
   return lv.filter((n,i,a)=>a.indexOf(n)===i&&n>=0&&n<=50);}
-function fmtAltOne(a){a=String(a||'').trim().toUpperCase();if(!a)return '';if(a==='SFC')return 'SFC';
-  let m=a.match(/^(\d+(?:\.5)?)(\+)?$/);if(m){let n=parseFloat(m[1]);return (n%1?n.toFixed(1):String(n))+'K'+(m[2]||'');}
-  let r=a.match(/^(\d+(?:\.5)?)\s*-\s*(\d+(?:\.5)?)$/);if(r){const f=x=>{let n=parseFloat(x);return n%1?n.toFixed(1):String(n);};return f(r[1])+'-'+f(r[2])+'K';}
-  return a;}
+function fmtAltOne(a){const b=parseAltBlock(a);if(!b)return String(a||'').trim().toUpperCase();const s=x=>x===0?'SFC':String(x);
+  if(b.kind==='range')return s(b.lo)+'-'+s(b.hi)+'K';
+  if(b.kind==='above')return s(b.lo)+'K+';
+  if(b.kind==='below')return '\u2264'+s(b.lo)+'K';
+  return s(b.lo)+'K';}
 function fmtAlt(a){a=String(a||'').trim();if(!a)return '';
   if(a.indexOf(',')>=0)return a.split(',').map(s=>fmtAltOne(s.trim())).filter(Boolean).join(', ');
   return fmtAltOne(a);}
@@ -757,19 +766,26 @@ function addGroupAlts(inner,spec){
   const groups=new Map();for(let i=0;i<n;i++){const g=find(i);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(arr[i]);}
   const fs=Math.round(th*0.65),gap=Math.round(fs*0.75);
   groups.forEach(members=>{
-    const set=new Set();for(const m of members)altLevels(m.o.alt).forEach(l=>set.add(l));
-    if(!set.size)return;
-    const levels=[...set].sort((a,b)=>a-b);const runs=[];let rs=levels[0],rp=levels[0];
-    for(let i=1;i<levels.length;i++){if(levels[i]===rp+1)rp=levels[i];else{runs.push([rs,rp]);rs=rp=levels[i];}}
-    runs.push([rs,rp]);
-    if(runs.length>2)return; // multiple non-contiguous blocks won't fit next to the arrows — the legend below carries them
-    const txt=runs.map(r=>bandStr(r[0],r[1])).join('\n');
+    const seen=new Set(),blocks=[];
+    for(const m of members)String(m.o.alt||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(str=>{const b=parseAltBlock(str);if(b){const key=b.kind+':'+b.lo+':'+b.hi;if(!seen.has(key)){seen.add(key);blocks.push(b);}}});
+    if(!blocks.length||blocks.length>3)return; // nothing, or too many to sit by the arrows — the legend below carries them
     let cx=0,cy=0,dx=0,dy=0;for(const m of members){cx+=m.st.x;cy+=m.st.y;dx+=m.d.x;dy+=m.d.y;}
     cx/=members.length;cy/=members.length;const dl=Math.hypot(dx,dy)||1;dx/=dl;dy/=dl;
-    const px=cx-dx*(len/2+gap),py=cy-dy*(len/2+gap);
-    const el=document.createElement('div');el.className='galt';el.textContent=txt;el.style.whiteSpace='pre-line';el.style.textAlign='center';
-    el.style.left=px.toFixed(1)+'px';el.style.top=py.toFixed(1)+'px';el.style.fontSize=fs+'px';inner.appendChild(el);});
+    const px=cx-dx*(len/2+gap),py=cy-dy*(len/2+gap),horiz=Math.abs(dx)>=Math.abs(dy);
+    const cont=document.createElement('div');
+    cont.style.cssText='position:absolute;transform:translate(-50%,-50%);pointer-events:none;display:inline-flex;flex-direction:'+(horiz?'row':'column')+';align-items:center;gap:'+Math.round(fs*0.1)+'px;left:'+px.toFixed(1)+'px;top:'+py.toFixed(1)+'px';
+    blocks.forEach((b,i)=>{if(i>0){const pl=document.createElement('div');pl.textContent='+';pl.style.cssText='font:800 '+fs+'px Arial,sans-serif;color:#000;padding:0 '+Math.round(fs*0.12)+'px';cont.appendChild(pl);}cont.appendChild(altBlockEl(b,fs));});
+    inner.appendChild(cont);});
 }
+function altBlockEl(b,fs){const s=x=>x===0?'SFC':String(x);const lw=Math.max(2,Math.round(fs*0.1));
+  const box=document.createElement('div');box.style.cssText='display:inline-flex;flex-direction:column;align-items:stretch;font:900 '+fs+'px Arial,Helvetica,sans-serif;color:#000;line-height:0.98;text-align:center';
+  const line=()=>{const d=document.createElement('div');d.style.cssText='height:0;border-top:'+lw+'px solid #000;margin:'+Math.round(fs*0.06)+'px 0';return d;};
+  const num=t=>{const d=document.createElement('div');d.textContent=t;d.style.cssText='padding:0 '+Math.round(fs*0.18)+'px;white-space:nowrap';return d;};
+  if(b.kind!=='above')box.appendChild(line());
+  if(b.kind==='range'){box.appendChild(num(s(b.hi)));box.appendChild(num(s(b.lo)));}
+  else box.appendChild(num(s(b.lo)));
+  if(b.kind!=='below')box.appendChild(line());
+  return box;}
 function modeFrames(card){const ar=card&&card.actionRange,aLab=(ar&&state.showActionRange!==false)?('ACTION @ '+ar+'NM'):'MANEUVER',m=lmode();
   if(m===1)return [{type:'combined',label:aLab}];
   if(m===2)return [{type:'push',label:'PICTURE'},{type:'combined',label:aLab}];
@@ -1000,11 +1016,19 @@ function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAl
   const selShow=document.createElement('div');selShow.style.cssText='flex:1;font-weight:800;font-family:"Courier New",monospace;color:var(--txt)';selShow.textContent='—';
   const addBtn=document.createElement('button');addBtn.className='btn primary';addBtn.style.cssText='flex:0 0 auto';addBtn.textContent='＋ Add';
   selRow.append(selShow,addBtn);
-  hdr.append(field,hint,selRow);container.appendChild(hdr);
-  const pendingStr=()=>curLow==null?'':(curLow===curHigh?(curLow===0?'SFC':String(curLow)):(curLow+'-'+curHigh));
+  const bRow=document.createElement('div');bRow.style.cssText='display:flex;gap:8px;margin-top:8px';
+  const belowBtn=document.createElement('button');belowBtn.className='btn';belowBtn.style.flex='1';belowBtn.textContent='& below';
+  const aboveBtn=document.createElement('button');aboveBtn.className='btn';aboveBtn.style.flex='1';aboveBtn.textContent='& above';
+  bRow.append(belowBtn,aboveBtn);
+  hdr.append(field,hint,selRow,bRow);container.appendChild(hdr);
+  let bound='';
+  const pendingStr=()=>{if(curLow==null)return '';if(curLow!==curHigh)return curLow+'-'+curHigh;const base=curLow===0?'SFC':String(curLow);return base+(bound==='above'?'+':bound==='below'?'-':'');};
   const syncField=()=>{const p=pendingStr();const all=parts.concat(p?[p]:[]);field.value=all.join(', ');pick(all.join(', '));};
-  addBtn.onclick=()=>{const p=pendingStr();if(!p)return;parts.push(p);curLow=curHigh=anchor=null;hasBlock=false;selShow.textContent='—';refresh();syncField();};
-  field.addEventListener('input',()=>{parts.length=0;field.value.split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>parts.push(s));curLow=curHigh=anchor=null;hasBlock=false;selShow.textContent='—';refresh();pick(field.value.trim());});
+  const refreshBound=()=>{belowBtn.classList.toggle('sel',bound==='below');aboveBtn.classList.toggle('sel',bound==='above');selShow.textContent=fmtAlt(pendingStr())||'—';syncField();};
+  belowBtn.onclick=()=>{bound=(bound==='below')?'':'below';refreshBound();};
+  aboveBtn.onclick=()=>{bound=(bound==='above')?'':'above';refreshBound();};
+  addBtn.onclick=()=>{const p=pendingStr();if(!p)return;parts.push(p);curLow=curHigh=anchor=null;hasBlock=false;bound='';belowBtn.classList.remove('sel');aboveBtn.classList.remove('sel');selShow.textContent='—';refresh();syncField();};
+  field.addEventListener('input',()=>{parts.length=0;field.value.split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>parts.push(s));curLow=curHigh=anchor=null;hasBlock=false;bound='';belowBtn.classList.remove('sel');aboveBtn.classList.remove('sel');selShow.textContent='—';refresh();pick(field.value.trim());});
   const tape=document.createElement('div');tape.className='alt-tape';
   for(let n=50;n>=0;n--){const row=document.createElement('button');row.className='alt-row'+(rs.has(n)?' red':'');
     row.appendChild(Object.assign(document.createElement('span'),{textContent:(n===0?'SFC':n)}));
@@ -1013,6 +1037,7 @@ function buildAltTape(container,opts){opts=opts||{};const rs=new Set(state.redAl
         if(anchor===null||hasBlock){anchor=n;hasBlock=false;curLow=curHigh=n;}
         else if(n===anchor){curLow=curHigh=n;hasBlock=false;}
         else{curLow=Math.min(anchor,n);curHigh=Math.max(anchor,n);hasBlock=true;}
+        if(curLow!==curHigh){bound='';belowBtn.classList.remove('sel');aboveBtn.classList.remove('sel');}
         selShow.textContent=fmtAlt(pendingStr())||'—';refresh();syncField();};
     rowEls[n]=row;tape.appendChild(row);}
   container.appendChild(tape);
