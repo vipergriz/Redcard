@@ -209,7 +209,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v112</div>
+  <div id="setupVer">Red Planning Tool v113</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -258,7 +258,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v112</small><span id="titleText">Alpha</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v113</small><span id="titleText">Alpha</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -1449,7 +1449,10 @@ function buildCell(page,card,x,y,w,h){
   const headH=17,gap=5,pad=6;
   const sp=(card.frames&&card.frames[0])?card.frames[0]:{type:'step',k:999};
   const box=document.createElement('div');box.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px;border:1.5px solid #111;border-radius:7px;box-sizing:border-box;background:#fff';page.appendChild(box);
-  const hdr=document.createElement('div');hdr.style.cssText='position:absolute;left:'+x+'px;top:'+(y+3)+'px;width:'+w+'px;font-size:11px;font-weight:800;color:#111;text-align:center';hdr.textContent=(card.name||'').toUpperCase();page.appendChild(hdr);
+  const hdr=document.createElement('div');hdr.style.cssText='position:absolute;left:'+x+'px;top:'+(y+3)+'px;width:'+w+'px;font-size:11px;font-weight:800;color:#111;text-align:center;white-space:nowrap;overflow:hidden';
+  const arTxt=(card.actionRange&&state.showActionRange!==false)?(' \u00B7 @ '+card.actionRange+'NM'):'';
+  hdr.innerHTML=esc((card.name||'').toUpperCase())+(arTxt?'<span style="font-weight:600;color:#333">'+esc(arTxt)+'</span>':'');
+  page.appendChild(hdr);
   const legShow=state.showLegend!==false;
   const side=Math.min(w-2*pad,h-headH-gap-(legShow?50:0)),boxTop=y+headH,legTop=boxTop+side,legH=h-headH-side-pad;
   const bx=phaseBoxEl(card,sp,side,side);bx.style.position='absolute';bx.style.left=(x+(w-side)/2)+'px';bx.style.top=boxTop+'px';page.appendChild(bx);
