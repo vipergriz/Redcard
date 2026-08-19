@@ -37,6 +37,7 @@
   #presBar{display:flex;gap:6px;align-items:center;padding:6px 10px;background:#181c22;border-bottom:1px solid var(--line);overflow-x:auto;flex-shrink:0}
   .pres-chip{padding:7px 15px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-weight:700;white-space:nowrap}
   .pres-chip.sel{background:var(--accent);border-color:var(--accent);color:#06243b}
+  .pres-x{margin-left:4px;flex-shrink:0;background:#3a2222;border:1px solid #5a2b2b;color:var(--danger);font-weight:800;border-radius:9px;padding:7px 10px;font-size:13px;line-height:1}
   .pres-add{padding:7px 12px;border-radius:9px;background:transparent;border:1px dashed var(--line);color:var(--accent);font-weight:700;flex-shrink:0}
 
   #canvasWrap{flex:1;position:relative;overflow:hidden;background:#565d68;touch-action:none}
@@ -208,7 +209,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v110</div>
+  <div id="setupVer">Red Planning Tool v112</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +258,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v110</small><span id="titleText">Alpha</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v112</small><span id="titleText">Alpha</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -1166,8 +1167,12 @@ function buildInspector(o){
 
 /* ============ PRESENTATIONS ============ */
 function renderPresBar(){const bar=$('presBar');bar.innerHTML='';
-  state.cards.forEach((cd,i)=>{const c=document.createElement('button');c.className='pres-chip'+(i===state.cur?' sel':'');c.textContent=cd.name;c.onclick=()=>loadCard(i);bar.appendChild(c);});
+  state.cards.forEach((cd,i)=>{const c=document.createElement('button');c.className='pres-chip'+(i===state.cur?' sel':'');c.textContent=cd.name;c.onclick=()=>loadCard(i);bar.appendChild(c);
+    if(i===state.cur&&state.cards.length>1){const x=document.createElement('button');x.className='pres-x';x.textContent='🗑';x.title='Delete this presentation';x.onclick=e=>{e.stopPropagation();deletePresentation(i);};bar.appendChild(x);}});
   const add=document.createElement('button');add.className='pres-add';add.textContent='＋';add.onclick=addCard;bar.appendChild(add);}
+function deletePresentation(i){if(state.cards.length<=1){flash('Need at least one presentation');return;}
+  const nm=state.cards[i].name;if(!confirm('Delete presentation "'+nm+'"? This removes its arrows and can\u2019t be undone.'))return;
+  state.cards.splice(i,1);if(state.cur>=state.cards.length)state.cur=state.cards.length-1;loadCard(state.cur);renderPresBar();persist();flash('Deleted '+nm);}
 function loadCard(i){state.cur=i;const cd=state.cards[i];state.title=cd.title;state.objects=cd.objects;state.selected=null;
   $('titleText').textContent=cd.title||cd.name;render();updateActions();renderPresBar();closeSheets();}
 function addCard(){const name=LETTERS[state.cards.length]||('Pic '+(state.cards.length+1));state.cards.push({name,title:'',objects:[]});loadCard(state.cards.length-1);ensureScaleDefaults();render();persist();}
@@ -1175,7 +1180,7 @@ function renderMenuPres(){const c=$('menuPres');c.innerHTML='';
   state.cards.forEach((cd,i)=>{const row=document.createElement('div');row.className='fedit';
     const tag=document.createElement('div');tag.className='sw';tag.style.background=i===state.cur?cssv('--accent'):cssv('--line');tag.style.borderRadius='8px';
     const nm=document.createElement('input');nm.className='nm';nm.style.textTransform='none';nm.value=cd.name;nm.addEventListener('input',()=>{cd.name=nm.value;renderPresBar();if(i===state.cur)$('titleText').textContent=cd.title||cd.name;persist();});
-    const rm=document.createElement('button');rm.className='rm';rm.textContent='✕';rm.onclick=()=>{if(state.cards.length<=1)return;state.cards.splice(i,1);if(state.cur>=state.cards.length)state.cur=state.cards.length-1;loadCard(state.cur);renderMenuPres();};
+    const rm=document.createElement('button');rm.className='rm';rm.textContent='✕';rm.onclick=()=>{deletePresentation(i);renderMenuPres();};
     row.append(tag,nm,rm);c.appendChild(row);});}
 $('menuAddPres').onclick=()=>{addCard();renderMenuPres();};
 $('showBtn').onclick=enterShow;
@@ -1543,15 +1548,20 @@ function buildPageFor(group,fullH){
   const content=document.createElement('div');content.style.cssText='position:absolute;left:'+PAD+'px;top:'+PAD+'px;width:'+SW+'px;height:'+SH+'px';page.appendChild(content);
   const fold=document.createElement('div');fold.style.cssText='position:absolute;left:'+HALF+'px;top:0;width:0;height:'+SH+'px;border-left:1px dashed #aaa';content.appendChild(fold);
   const notesH=Math.round(SH*0.33),rNotes=notesActive('right'),notesY=SH-notesH,m=lmode();
+  const q4=(m===4&&group.filter(Boolean).length>=5); // IV 4-up overflow: brief top-left, 2 presentations bottom-left, 4 on the right
   const cond=(!!state.pullLeft)&&(m!==1)&&(m!==4)&&!!group[0]; // pull first presentation into the bottom-left (band layouts only)
   const lNotes=notesActive('left');
   const lNoteH=cond?(lNotes?Math.round(SH*0.22):0):(lNotes?notesH:0);
-  const briefH=cond?(lNotes?Math.round(SH*0.34):Math.round(SH*0.50)):(lNotes?(notesY-12):SH);
-  const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+briefH+'px;padding:'+(cond?'20px 12px 20px 0':'30px 12px 30px 0')+';box-sizing:border-box;overflow:hidden';
-  left.innerHTML=leftBriefHTML(cond);
+  const briefH=q4?Math.round(SH*0.48):(cond?(lNotes?Math.round(SH*0.34):Math.round(SH*0.50)):(lNotes?(notesY-12):SH));
+  const left=document.createElement('div');left.style.cssText='position:absolute;left:0;top:0;width:'+HALF+'px;height:'+briefH+'px;padding:'+((cond||q4)?'20px 12px 20px 0':'30px 12px 30px 0')+';box-sizing:border-box;overflow:hidden';
+  left.innerHTML=leftBriefHTML(cond||q4);
   content.appendChild(left);
-  const FG=12,rx=HALF+FG,rw=SW-rx,top=14,rh=(rNotes?(notesY-12-top):(SH-2*top));
-  if(m===1||m===4){const cols=(m===4?2:3),rows=2,cgap=12,rgap=14;const cw=(rw-(cols-1)*cgap)/cols,chh=(rh-(rows-1)*rgap)/rows;
+  const FG=12,rx=HALF+FG,rw=SW-rx,top=14,rh=((rNotes&&!q4)?(notesY-12-top):(SH-2*top));
+  if(q4){const lbTop=briefH+14,lbH=SH-lbTop,lc=2,lcg=12,lcw=((HALF-FG)-(lc-1)*lcg)/lc;
+    [group[0],group[1]].forEach((card,bi)=>{if(card)buildCell(content,card,bi*(lcw+lcg),lbTop,lcw,lbH);});
+    const rcols=2,rrows=2,rcg=12,rrg=14,rcw=(rw-(rcols-1)*rcg)/rcols,rch=(rh-(rrows-1)*rrg)/rrows;
+    [group[2],group[3],group[4],group[5]].forEach((card,bi)=>{if(!card)return;const r=Math.floor(bi/rcols),c=bi%rcols;buildCell(content,card,rx+c*(rcw+rcg),top+r*(rch+rrg),rcw,rch);});
+  }else if(m===1||m===4){const cols=(m===4?2:3),rows=2,cgap=12,rgap=14;const cw=(rw-(cols-1)*cgap)/cols,chh=(rh-(rows-1)*rgap)/rows;
     group.forEach((card,bi)=>{if(bi>=cols*rows)return;const r=Math.floor(bi/cols),c=bi%cols;buildCell(content,card,rx+c*(cw+cgap),top+r*(chh+rgap),cw,chh);});
   }else if(cond){const lbGap=14,lbY=briefH+lbGap,lbX=0,lbW=HALF-FG,lbBot=SH-(lNotes?(lNoteH+lbGap):0),lbH=lbBot-lbY;
     if(group[0])buildBand(content,group[0],lbX,lbY,lbW,lbH);
@@ -1559,15 +1569,15 @@ function buildPageFor(group,fullH){
     rc.forEach((card,bi)=>buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh));
   }else{const rc=group.filter(Boolean).slice(0,2),slots=Math.max(1,rc.length),vgap=14,bh=(rh-(slots-1)*vgap)/slots;
     rc.forEach((card,bi)=>buildBand(content,card,rx,top+bi*(bh+vgap),rw,bh));}
-  if(lNotes)content.appendChild(buildNotesBox('left',0,cond?(SH-lNoteH):notesY,HALF-FG,lNoteH));
-  if(rNotes)content.appendChild(buildNotesBox('right',rx,notesY,rw,notesH));
+  if(lNotes&&!q4)content.appendChild(buildNotesBox('left',0,cond?(SH-lNoteH):notesY,HALF-FG,lNoteH));
+  if(rNotes&&!q4)content.appendChild(buildNotesBox('right',rx,notesY,rw,notesH));
   return page;
 }
 function buildPages(scaled){
   const sheet=$('printSheet');sheet.innerHTML='';
   const PW=1056,PH=PRINT_H;
   const pv=scaled?Math.min(1,(window.innerWidth-24)/PW):1;
-  const m=lmode(),per=m===1?6:m===4?4:((state.pullLeft&&m!==1)?3:2);
+  const m=lmode(),per=m===1?6:m===4?6:((state.pullLeft&&m!==1)?3:2);
   for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);const page=buildPageFor(group,PRINT_H);
     if(scaled){const h=document.createElement('div');h.className='pageholder';h.style.width=(PW*pv)+'px';h.style.height=(PH*pv)+'px';page.style.transform='scale('+pv+')';page.style.transformOrigin='top left';h.appendChild(page);sheet.appendChild(h);}
     else sheet.appendChild(page);}
@@ -1616,7 +1626,7 @@ async function exportPDF(btn){
   const old=btn?btn.textContent:'';if(btn){btn.textContent='Building…';btn.disabled=true;}
   const holder=document.createElement('div');holder.style.cssText='position:fixed;left:-99999px;top:0;background:#fff';document.body.appendChild(holder);
   try{
-    const m=lmode(),per=m===1?6:m===4?4:((state.pullLeft&&m!==1)?3:2),R=3,imgs=[];
+    const m=lmode(),per=m===1?6:m===4?6:((state.pullLeft&&m!==1)?3:2),R=3,imgs=[];
     if(!state.cards.length){flash('No cards to export');return;}
     for(let i=0;i<state.cards.length;i+=per){const group=state.cards.slice(i,i+per);
       const page=buildPageFor(group,816);holder.appendChild(page);
