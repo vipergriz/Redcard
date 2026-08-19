@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v108</div>
+  <div id="setupVer">Red Planning Tool v110</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v108</small><span id="titleText">Alpha</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v110</small><span id="titleText">Alpha</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -395,7 +395,7 @@ const ARROW_LEN=330;
 let uid=1; const nid=()=>'o'+(uid++);
 
 let state={
-  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,showActionRange:true,legendCombine:{},pullLeft:false,formations:[{color:PALETTE[0],name:"MIG",ships:2,aux:"369.000",stn:"30100-1"},{color:PALETTE[1],name:"VILLIAN",ships:4,aux:"278.2",stn:"75551-4"}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
+  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,showActionRange:true,legendCombine:{},pullLeft:false,formations:[{color:PALETTE[0],name:"MIG",ships:2,acft:"F-16",flightNo:"01",aux:"369.000",stn:"30100-1"},{color:PALETTE[1],name:"VILLAIN",ships:4,acft:"F-5",flightNo:"01",aux:"278.2",stn:"75551-4"}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
   cards:[{name:'Alpha',title:'',objects:[]}],cur:0,turnDir:-1,tx:0,ty:0,showMode:false,
   title:'',objects:null,selected:null
 };
@@ -854,9 +854,8 @@ const getSel=()=>state.objects.find(o=>o.id===state.selected);
 function selectOnly(id){state.selected=id;render();updateActions();}
 function updateActions(){const slot=$('actionSlot');slot.innerHTML='';
   if(state.showMode){const n=(curCard().frames||[]).length;slot.appendChild(mkBtn('✕ Exit','',exitShow));slot.appendChild(mkBtn('View / Print'+(n?' ('+n+')':'')+' ▸','primary',openPreview));return;}
-  if(state.selected){const so=getSel();
-    if(so&&so.type==='arrow'){slot.appendChild(mkBtn('Next FTR','primary',nextFighter));slot.appendChild(mkBtn('Edit','',openInspector));slot.appendChild(mkBtn('Delete','danger',deleteSel));}
-    else{slot.appendChild(mkBtn('Edit','primary',openInspector));slot.appendChild(mkBtn('Copy','',duplicateSel));slot.appendChild(mkBtn('Delete','danger',deleteSel));}}
+  const so=state.selected?getSel():null;
+  if(so&&so.type!=='arrow'){slot.appendChild(mkBtn('Edit','primary',openInspector));slot.appendChild(mkBtn('Copy','',duplicateSel));slot.appendChild(mkBtn('Delete','danger',deleteSel));}
   else{slot.appendChild(mkBtn('Next FTR','primary',nextFighter));slot.appendChild(mkBtn('Tools','',()=>{renderActiveChips();openSheet('toolSheet');}));slot.appendChild(mkBtn('Show','',enterShow));}}
 function mkBtn(t,c,fn){const b=document.createElement('button');b.className='btn'+(c?' '+c:'');b.textContent=t;b.style.flex='1';b.onclick=fn;return b;}
 
@@ -868,7 +867,7 @@ function unnumberedCount(fi){return state.objects.filter(o=>o.type==='arrow'&&o.
 function formationCount(fi){return state.objects.filter(o=>o.type==='arrow'&&o.formation===fi).length;}
 function nextShipNum(fi){const used=usedShips(fi),N=shipsOf(fi);for(let k=1;k<=N;k++)if(!used.has(k))return k;return 0;}
 function addObject(type){const c=viewCenter(),j=()=>Math.random()*26-13;let o={id:nid(),type,x:Math.round(c.x+j()),y:Math.round(c.y+j())};
-  if(type==='arrow'){const fi=state.active,f=state.formations[fi]||{name:'',ships:1};const ship=(f.ships||1)>1?nextShipNum(fi):0;
+  if(type==='arrow'){const fi=state.active,f=state.formations[fi]||{name:'',ships:1};const ship=(fi===0&&(f.ships||1)>1)?nextShipNum(fi):0;
     Object.assign(o,{formation:fi,ship,cs:csFor(fi,ship),alt:'',showAlt:true,len:330,th:102,angle:state.defaultAngle,man:[],maneuver:"",ea:false,fontSize:47});}
   else if(type==='text')Object.assign(o,{text:"PUSH",size:22,bold:true,italic:false,boxed:false,color:"#000000"});
   else if(type==='bracket'||type==='azimuth'){o.type='bracket';Object.assign(o,{kind:type==='azimuth'?'azimuth':'range',phase:'push',nm:defaultScaleNM()});}
@@ -878,11 +877,12 @@ function addObject(type){const c=viewCenter(),j=()=>Math.random()*26-13;let o={i
   else if(type==='redpt')Object.assign(o,{size:34});
   state.objects.push(o);selectOnly(o.id);closeSheets();if(type!=='arrow'&&type!=='redpt')openInspector();}
 function duplicateSel(){const o=getSel();if(!o)return;const c=JSON.parse(JSON.stringify(o));c.id=nid();c.x+=22;c.y+=22;state.objects.push(c);selectOnly(c.id);}
-function nextFighter(){const sel=getSel();let fi,numbered;
-  if(sel&&sel.type==='arrow'){fi=sel.formation;numbered=(sel.ship||0)>0;}else{fi=state.active;numbered=shipsOf(fi)>1;}
+function nextFighter(){const sel=getSel();let fi;
+  if(sel&&sel.type==='arrow')fi=sel.formation;else fi=state.active;
   let slot=null;
   for(let f=fi;f<state.formations.length&&!slot;f++){const N=shipsOf(f);if(formationCount(f)>=N)continue;
-    if(numbered){const used=usedShips(f);for(let k=1;k<=N;k++)if(!used.has(k)){slot={fi:f,ship:k};break;}}
+    const numberedF=(f===0&&N>1);
+    if(numberedF){const used=usedShips(f);for(let k=1;k<=N;k++)if(!used.has(k)){slot={fi:f,ship:k};break;}}
     else slot={fi:f,ship:0};}
   if(!slot){flash('All fighters placed');return;}
   const b=(sel&&sel.type==='arrow')?sel:null,c=viewCenter();
@@ -1105,8 +1105,7 @@ function buildInspector(o){
     h+=`<div class="sub-h">Callsign</div>`;
     h+=`<div class="field"><div class="ship-sel" id="iShip"><button data-n="0">—</button><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button></div></div>`;
     h+=fld('Label','<input type="text" maxlength="6" data-k="cs" style="text-transform:uppercase">');
-    h+=`<button class="btn ghost" id="moreBtn" style="width:100%;margin-top:8px;color:var(--accent)">More options ▾</button>`;
-    h+=`<div id="moreWrap" style="display:none">`;
+    h+=`<div id="moreWrap" style="margin-top:8px">`;
     h+=`<div class="field"><label>Formation</label><div class="chips" id="iFchips"></div></div>`;
     h+=`<div class="field"><label>Direction</label><div class="dirpad" id="iDir"><button data-ang="270">↑ N</button><button data-ang="90">↓ S</button><button data-ang="0">→ E</button><button data-ang="180">← W</button></div></div>`;
     h+=`<div class="toggle"><span>Electronic Attack ⚡</span><div class="switch" data-toggle="ea"><i></i></div></div>`;
@@ -1290,7 +1289,7 @@ $('masterAddF').onclick=()=>{if(state.formations.length>=8)return;state.formatio
 $('masterAltBtn').onclick=()=>openAltEditor(openMaster);
 function clearMission(){if(!confirm('Wipe this entire mission and start fresh? This removes all presentations, arrows, formations, altitude blocks, and settings.'))return;
   state.defaultAngle=180;state.active=0;state.fightAxis=null;state.layoutMode=1;state.scaleNM=25;state.mission=null;state.perPage=2;
-  state.formations=[{color:PALETTE[0],name:'MIG',ships:2,aux:'369.000',stn:'30100-1'},{color:PALETTE[1],name:'VILLIAN',ships:4,aux:'278.2',stn:'75551-4'}];state.redAlts=[];state.legendCombine={};state.pullLeft=false;state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
+  state.formations=[{color:PALETTE[0],name:'MIG',ships:2,acft:'F-16',flightNo:'01',aux:'369.000',stn:'30100-1'},{color:PALETTE[1],name:'VILLAIN',ships:4,acft:'F-5',flightNo:'01',aux:'278.2',stn:'75551-4'}];state.redAlts=[];state.legendCombine={};state.pullLeft=false;state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
   state.cards=[{name:'Alpha',title:'',objects:[]}];state.cur=0;state.title='';state.selected=null;
   state.objects=state.cards[0].objects;ensureScaleDefaults();
   loadCard(0);fitZoom();persist();flash('Mission cleared');openMaster();}
