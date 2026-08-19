@@ -209,7 +209,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v113</div>
+  <div id="setupVer">Red Planning Tool v114</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -258,7 +258,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v113</small><span id="titleText">Alpha</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v114</small><span id="titleText">Alpha</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -855,9 +855,7 @@ const getSel=()=>state.objects.find(o=>o.id===state.selected);
 function selectOnly(id){state.selected=id;render();updateActions();}
 function updateActions(){const slot=$('actionSlot');slot.innerHTML='';
   if(state.showMode){const n=(curCard().frames||[]).length;slot.appendChild(mkBtn('✕ Exit','',exitShow));slot.appendChild(mkBtn('View / Print'+(n?' ('+n+')':'')+' ▸','primary',openPreview));return;}
-  const so=state.selected?getSel():null;
-  if(so&&so.type!=='arrow'){slot.appendChild(mkBtn('Edit','primary',openInspector));slot.appendChild(mkBtn('Copy','',duplicateSel));slot.appendChild(mkBtn('Delete','danger',deleteSel));}
-  else{slot.appendChild(mkBtn('Next FTR','primary',nextFighter));slot.appendChild(mkBtn('Tools','',()=>{renderActiveChips();openSheet('toolSheet');}));slot.appendChild(mkBtn('Show','',enterShow));}}
+  slot.appendChild(mkBtn('Next FTR','primary',nextFighter));slot.appendChild(mkBtn('Tools','',()=>{renderActiveChips();openSheet('toolSheet');}));slot.appendChild(mkBtn('Show','',enterShow));}
 function mkBtn(t,c,fn){const b=document.createElement('button');b.className='btn'+(c?' '+c:'');b.textContent=t;b.style.flex='1';b.onclick=fn;return b;}
 
 /* ============ ADD / EDIT ============ */
