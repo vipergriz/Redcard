@@ -208,7 +208,7 @@
 
 <!-- ===== SETUP ===== -->
 <div id="setup">
-  <div id="setupVer">Red Planning Tool v106</div>
+  <div id="setupVer">Red Planning Tool v107</div>
   <div class="step active" data-step="1">
     <div class="wtitle">Setup · 1 of 3</div>
     <h1>Which way do arrows point?</h1>
@@ -257,7 +257,7 @@
   <div id="topbar">
     <button class="iconbtn" id="menuBtn">☰</button>
     <button class="iconbtn" id="masterBtn">⚙</button>
-    <button id="cardTitleBtn"><small>RED PLANNING TOOL v106</small><span id="titleText">Alpha</span></button>
+    <button id="cardTitleBtn"><small>RED PLANNING TOOL v107</small><span id="titleText">Alpha</span></button>
     <button class="iconbtn" id="toolsTopBtn">＋</button>
   </div>
   <div id="presBar"></div>
@@ -395,7 +395,7 @@ const ARROW_LEN=330;
 let uid=1; const nid=()=>'o'+(uid++);
 
 let state={
-  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,showActionRange:true,legendCombine:{},pullLeft:false,formations:[{color:PALETTE[0],name:"MIG",ships:2,aux:"369.000",stn:"30010-1"}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
+  defaultAngle:180,active:0,zoom:1,perPage:2,layoutMode:1,scaleNM:25,fightAxis:null,mission:null,showLegend:true,showGroupAlt:true,showActionRange:true,legendCombine:{},pullLeft:false,formations:[{color:PALETTE[0],name:"MIG",ships:2,aux:"369.000",stn:"30100-1"},{color:PALETTE[1],name:"VILLIAN",ships:4,stn:"75551-4"}],redAlts:[],tanker:{on:false,cs:'',arct:'',track:'',alt:'',offload:''},points:[],notesLeft:{items:[]},notesRight:{items:[]},
   cards:[{name:'Alpha',title:'',objects:[]}],cur:0,turnDir:-1,tx:0,ty:0,showMode:false,
   title:'',objects:null,selected:null
 };
@@ -1290,7 +1290,7 @@ $('masterAddF').onclick=()=>{if(state.formations.length>=8)return;state.formatio
 $('masterAltBtn').onclick=()=>openAltEditor(openMaster);
 function clearMission(){if(!confirm('Wipe this entire mission and start fresh? This removes all presentations, arrows, formations, altitude blocks, and settings.'))return;
   state.defaultAngle=180;state.active=0;state.fightAxis=null;state.layoutMode=1;state.scaleNM=25;state.mission=null;state.perPage=2;
-  state.formations=[{color:PALETTE[0],name:'MIG',ships:2,aux:'369.000',stn:'30010-1'}];state.redAlts=[];state.legendCombine={};state.pullLeft=false;state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
+  state.formations=[{color:PALETTE[0],name:'MIG',ships:2,aux:'369.000',stn:'30100-1'},{color:PALETTE[1],name:'VILLIAN',ships:4,stn:'75551-4'}];state.redAlts=[];state.legendCombine={};state.pullLeft=false;state.tanker={on:false,cs:'',arct:'',track:'',alt:'',offload:''};state.points=[];state.notesLeft={items:[]};state.notesRight={items:[]};
   state.cards=[{name:'Alpha',title:'',objects:[]}];state.cur=0;state.title='';state.selected=null;
   state.objects=state.cards[0].objects;ensureScaleDefaults();
   loadCard(0);fitZoom();persist();flash('Mission cleared');openMaster();}
